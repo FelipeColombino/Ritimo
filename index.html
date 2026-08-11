@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Ritmo — planejador de metas</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ritmo">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png" type="image/png">
+<!-- mantido em sincronia com o tema ativo por syncThemeColor() -->
+<meta name="theme-color" id="tc" content="#15181c">
+<style>
+:root{
+  --bg:#ffffff; --surface:#f5f6f7; --surface2:#eceef0;
+  --tx:#1a1d21; --tx2:#5c6773; --line:#e2e5e9;
+  --acc:#2f6feb; --accTx:#ffffff; --accSoft:#eaf1fe;
+  --ok:#2f7d4f; --warn:#8a6100; --bad:#b3261e;
+  --track:#e2e5e9;
+  --r:10px;
+  --sh:0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181c; --surface:#1d2126; --surface2:#252b31;
+    --tx:#e6e9ed; --tx2:#98a2ae; --line:#2b3138;
+    --acc:#5b9bf5; --accTx:#0d1117; --accSoft:#1b2733;
+    --ok:#6cc48d; --warn:#d6ad5c; --bad:#e8837a;
+    --track:#2b3138;
+    --sh:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181c; --surface:#1d2126; --surface2:#252b31;
+  --tx:#e6e9ed; --tx2:#98a2ae; --line:#2b3138;
+  --acc:#5b9bf5; --accTx:#0d1117; --accSoft:#1b2733;
+  --ok:#6cc48d; --warn:#d6ad5c; --bad:#e8837a;
+  --track:#2b3138;
+  --sh:0 1px 2px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--bg)}          /* evita faixa branca no elástico do Android */
+body{
+  background:var(--bg); color:var(--tx);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+  padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  /* --- comportamento de app, não de página web --- */
+  overscroll-behavior-y:contain;              /* sem "puxar para atualizar" nem bounce */
+  -webkit-tap-highlight-color:transparent;    /* sem flash azul ao tocar */
+  touch-action:manipulation;                  /* sem atraso de ~300ms do duplo-toque */
+}
+/* Controles não são texto: toque longo não deve selecionar.
+   Conteúdo (nomes, números, ajuda) continua selecionável e copiável. */
+button,.tab,.chip,.slot .t,.heroLabel,.grid dt,label{
+  -webkit-user-select:none;user-select:none;
+}
+.wrap{max-width:620px;margin:0 auto;padding:0 14px}
+h1,h2,h3{margin:0;font-weight:600;font-size:17px}
+b,strong{font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- topo ---------- */
+/* Em standalone o app pinta sob a barra de status: o cabeçalho precisa recuar. */
+.top{display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 0 8px}
+.brand{font-weight:600;font-size:16px;letter-spacing:.2px;flex:1}
+.brand span{color:var(--tx2);font-weight:400}
+
+button{font:inherit;color:inherit;cursor:pointer}
+.icon{
+  width:40px;height:40px;flex:0 0 auto;display:grid;place-items:center;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  font-size:16px;line-height:1;
+}
+.icon:active{background:var(--surface2)}
+
+/* ---------- abas de atividade ---------- */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;min-height:40px;padding:8px 14px;border-radius:999px;
+  background:var(--surface);border:1px solid var(--line);color:var(--tx2);
+  white-space:nowrap;max-width:60vw;overflow:hidden;text-overflow:ellipsis;
+}
+.tab[aria-selected="true"]{background:var(--acc);border-color:var(--acc);color:var(--accTx);font-weight:600}
+.tab.add{color:var(--tx2)}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;margin-bottom:12px;box-shadow:var(--sh);
+}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--tx2);margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px}
+.row.between{justify-content:space-between}
+.sub{color:var(--tx2);font-size:13px;margin-top:3px}
+.muted{color:var(--tx2)}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+
+/* ---------- herói ---------- */
+.hero{text-align:center;padding:20px 14px 8px}
+.heroLabel{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--tx2)}
+.heroNum{font-size:40px;font-weight:600;line-height:1.1;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.heroNum small{font-size:16px;font-weight:400;color:var(--tx2);margin-left:2px}
+.heroNote{font-size:13px;color:var(--tx2);margin-bottom:14px}
+.heroRows{border-top:1px solid var(--line);text-align:left}
+.heroRows div{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:11px 0;border-bottom:1px solid var(--line);font-size:14px;
+}
+.heroRows div:last-child{border-bottom:0}
+.heroRows span{color:var(--tx2)}
+.heroRows b{font-variant-numeric:tabular-nums;text-align:right}
+
+/* ---------- progresso ---------- */
+.bar{position:relative;height:10px;background:var(--track);border-radius:999px;overflow:hidden;margin:4px 0 8px}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--tx2);border-radius:999px;display:block}
+.barWrap{position:relative}
+.mark{position:absolute;top:-3px;width:2px;height:16px;background:var(--tx);border-radius:2px}
+.mark::after{
+  content:attr(data-l);position:absolute;top:18px;left:50%;transform:translateX(-50%);
+  font-size:10px;color:var(--tx2);white-space:nowrap;
+}
+.legend{display:flex;justify-content:space-between;font-size:13px;margin-top:22px}
+
+/* ---------- grade de números ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.grid div{background:var(--surface);padding:12px}
+.grid dt{font-size:12px;color:var(--tx2)}
+.grid dd{margin:3px 0 0;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.grid dd small{font-size:12px;font-weight:400;color:var(--tx2);display:block;margin-top:1px}
+
+/* ---------- listas de slots/dias ---------- */
+.slot{display:grid;grid-template-columns:68px 1fr auto;align-items:center;gap:10px;padding:7px 0;font-size:13px}
+.slot + .slot{border-top:1px solid var(--line)}
+.slot .t{color:var(--tx2);font-variant-numeric:tabular-nums}
+.slot .v{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.slot .mini{height:8px;background:var(--track);border-radius:999px;overflow:hidden}
+.slot .mini i{display:block;height:100%;background:var(--tx2);border-radius:999px}
+.slot.now{background:var(--accSoft);margin:0 -8px;padding:7px 8px;border-radius:6px}
+.slot.now + .slot{border-top:0}
+.slot.now .t{color:var(--acc);font-weight:600}
+.slot.now .mini i{background:var(--acc)}
+.slot.done .mini i{background:var(--ok)}
+.slot.fut .mini i{background:var(--track)}
+.scroller{max-height:290px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.note{font-size:12px;color:var(--tx2);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+
+/* ---------- registros ---------- */
+.reg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;font-size:14px}
+.reg + .reg{border-top:1px solid var(--line)}
+.reg .del{background:none;border:0;color:var(--tx2);padding:6px 8px;font-size:15px;border-radius:6px}
+.reg .del:active{background:var(--surface2)}
+
+/* ---------- barra de registro rápido ---------- */
+.quickbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:var(--surface);border-top:1px solid var(--line);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+}
+.quickbar .inner{max-width:620px;margin:0 auto;display:flex;gap:8px;align-items:center}
+.quickbar .lbl{font-size:11px;color:var(--tx2);max-width:620px;margin:0 auto 7px;text-transform:uppercase;letter-spacing:.6px}
+.chip{
+  flex:1 1 0;min-height:46px;border-radius:var(--r);
+  background:var(--bg);border:1px solid var(--line);color:var(--tx);
+  font-weight:600;font-variant-numeric:tabular-nums;
+}
+.chip:active{background:var(--accSoft);border-color:var(--acc)}
+.chip.edit{flex:0 0 52px;font-weight:400;color:var(--tx2)}
+
+/* ---------- botões ---------- */
+.btn{
+  min-height:46px;padding:0 16px;border-radius:var(--r);
+  background:var(--bg);border:1px solid var(--line);color:var(--tx);font-weight:500;
+}
+.btn:active{background:var(--surface2)}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:var(--accTx);font-weight:600}
+.btn.danger{color:var(--bad)}
+.btn.full{width:100%}
+.btns{display:flex;gap:8px}
+.btns .btn{flex:1}
+
+/* ---------- diálogo ---------- */
+dialog{
+  border:0;padding:0;background:transparent;max-width:100%;width:100%;
+  margin:auto auto 0;color:var(--tx);
+}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.sheet{
+  background:var(--bg);border:1px solid var(--line);border-bottom:0;
+  border-radius:14px 14px 0 0;padding:16px 14px calc(16px + env(safe-area-inset-bottom));
+  max-width:620px;margin:0 auto;max-height:88vh;overflow-y:auto;
+}
+.sheet h2{font-size:17px;margin-bottom:14px}
+.sheet .close{position:absolute;right:14px;top:12px}
+@media (min-width:640px){
+  dialog{margin:auto}
+  .sheet{border:1px solid var(--line);border-radius:14px}
+}
+
+/* ---------- formulário ---------- */
+label{display:block;font-size:12px;color:var(--tx2);margin:14px 0 5px;text-transform:uppercase;letter-spacing:.5px}
+input[type=text],input[type=number],input[type=date],input[type=time],select{
+  width:100%;min-height:46px;padding:10px 12px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  color:var(--tx);font:inherit;
+}
+input:focus,select:focus,.btn:focus-visible,.chip:focus-visible,.tab:focus-visible,.icon:focus-visible{
+  outline:2px solid var(--acc);outline-offset:1px
+}
+.f2{display:flex;gap:8px}
+.f2 > *{flex:1;min-width:0}
+.seg{display:flex;gap:6px}
+.seg button{
+  flex:1;min-height:44px;border-radius:var(--r);
+  background:var(--surface);border:1px solid var(--line);color:var(--tx2);
+}
+.seg button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--accTx);font-weight:600}
+.days{display:flex;gap:5px}
+.days button{
+  flex:1;min-height:44px;border-radius:var(--r);font-size:12px;
+  background:var(--surface);border:1px solid var(--line);color:var(--tx2);
+}
+.days button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--accTx);font-weight:600}
+.win{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.win input{flex:1}
+.win button{flex:0 0 44px;height:46px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);color:var(--tx2)}
+.preview{
+  margin-top:16px;padding:12px;border-radius:var(--r);
+  background:var(--accSoft);border:1px solid var(--line);font-size:14px;
+}
+.preview b{font-variant-numeric:tabular-nums}
+.preview .err{color:var(--bad)}
+.hint{font-size:12px;color:var(--tx2);margin-top:6px}
+.menuList{display:flex;flex-direction:column;gap:8px}
+.menuList .btn{width:100%;text-align:left;justify-content:flex-start;display:flex;align-items:center}
+
+/* ---------- avisos e toast ---------- */
+.warnbar{
+  background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--warn);
+  border-radius:var(--r);padding:11px 12px;margin:0 0 12px;font-size:13px;color:var(--tx)
+}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(104px + env(safe-area-inset-bottom));z-index:60;
+  background:var(--tx);color:var(--bg);padding:11px 14px;border-radius:var(--r);
+  font-size:14px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 14px rgba(0,0,0,.2);
+  max-width:calc(100% - 28px);
+}
+.toast button{background:none;border:0;color:var(--bg);font-weight:600;text-decoration:underline;padding:0}
+.empty{text-align:center;padding:34px 14px;color:var(--tx2)}
+.empty h2{font-size:17px;color:var(--tx);margin-bottom:8px;text-transform:none;letter-spacing:0}
+.empty p{margin:0 0 18px}
+details summary{cursor:pointer;color:var(--tx2);font-size:13px;padding:4px 0}
+details p, details li{font-size:13px;color:var(--tx2)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Ritmo <span>· metas por hora</span></div>
+    <button class="icon" id="btnTheme" title="Alternar tema" aria-label="Alternar tema">◐</button>
+    <button class="icon" id="btnMenu" title="Menu" aria-label="Menu">⋯</button>
+  </header>
+  <div id="warn"></div>
+  <nav class="tabs" id="tabs" aria-label="Atividades"></nav>
+  <main id="panel"></main>
+</div>
+
+<div class="quickbar" id="quick" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<dialog id="dlg"><div class="sheet" id="sheet"></div></dialog>
+
+<script>
+"use strict";
+
+/* ============================================================
+   ARMAZENAMENTO
+   ============================================================ */
+const KEY = "ritmo.v1";
+let storageOK = true;
+let store = { acts: [], sel: null, theme: null };
+
+try {
+  localStorage.setItem("__ritmo_test", "1");
+  localStorage.removeItem("__ritmo_test");
+} catch (e) { storageOK = false; }
+
+function load() {
+  if (!storageOK) return;
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.acts)) store = Object.assign(store, d);
+    }
+  } catch (e) { /* dados corrompidos: começa limpo em vez de travar */ }
+}
+function save() {
+  if (!storageOK) return;
+  try { localStorage.setItem(KEY, JSON.stringify(store)); }
+  catch (e) { storageOK = false; renderAll(); }
+}
+
+/* ============================================================
+   DATAS E HORÁRIOS
+   ============================================================ */
+const MIN = 60000;
+const DIAS_LBL = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const DIAS_ORD = [1,2,3,4,5,6,0];
+
+function ymd(d){
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function fromYmd(s){ const p = String(s).split("-").map(Number); return new Date(p[0], p[1]-1, p[2]); }
+function atMin(d, m){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, m); }
+function parseHM(s){ const p = String(s).split(":").map(Number); return (p[0]||0)*60 + (p[1]||0); }
+function ddmm(d){ return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0"); }
+function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function janelas(a){ return a.janelas.slice().sort((x,y)=>parseHM(x.de)-parseHM(y.de)); }
+
+/* Minutos úteis entre dois instantes: só dias-da-semana ativos, só dentro das janelas.
+   Base de todo o resto do cálculo. */
+function capMin(act, from, to){
+  if (!act.dias.length || !act.janelas.length || to <= from) return 0;
+  let total = 0, guard = 0;
+  const cur = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const last = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+  while (cur <= last && guard++ < 3000) {
+    if (act.dias.indexOf(cur.getDay()) >= 0) {
+      for (const w of act.janelas) {
+        const s = atMin(cur, parseHM(w.de)), e = atMin(cur, parseHM(w.ate));
+        if (e <= s) continue;
+        const a = s > from ? s : from, b = e < to ? e : to;
+        if (b > a) total += (b - a) / MIN;
+      }
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  return total;
+}
+
+/* Caminha para frente pelas janelas de trabalho consumindo N minutos úteis. */
+function addWorkMinutes(act, from, need){
+  if (need <= 0) return new Date(from);
+  if (!act.dias.length || !act.janelas.length) return null;
+  const cur = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  let left = need, guard = 0;
+  while (guard++ < 3000) {
+    if (act.dias.indexOf(cur.getDay()) >= 0) {
+      for (const w of janelas(act)) {
+        const s = atMin(cur, parseHM(w.de)), e = atMin(cur, parseHM(w.ate));
+        if (e <= s) continue;
+        const a = s > from ? s : from;
+        if (e > a) {
+          const avail = (e - a) / MIN;
+          if (avail >= left) return new Date(a.getTime() + left * MIN);
+          left -= avail;
+        }
+      }
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  return null;
+}
+
+/* Data final a partir de um prazo em dias úteis (o dia de início conta como dia 1). */
+function endAfterWorkdays(startYmd, n, dias){
+  const d = fromYmd(startYmd);
+  let count = 0, guard = 0;
+  if (!dias.length) return startYmd;
+  while (guard++ < 2000) {
+    if (dias.indexOf(d.getDay()) >= 0) { count++; if (count >= n) return ymd(d); }
+    d.setDate(d.getDate()+1);
+  }
+  return startYmd;
+}
+
+/* ============================================================
+   FORMATAÇÃO
+   ============================================================ */
+const nf1 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+const nf0 = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+
+function fmtDur(min){
+  min = Math.max(0, Math.round(min));
+  const h = Math.floor(min/60), m = min % 60;
+  if (h && m) return h + "h " + m + "min";
+  if (h) return h + "h";
+  return m + "min";
+}
+function isTempo(a){ return a.modo === "tempo"; }
+/* valor com unidade: "12 páginas" ou "1h 20min" */
+function fmtQ(a, v){ return isTempo(a) ? fmtDur(v) : nf1.format(v) + " " + a.unidade; }
+/* valor sem unidade, para tabelas apertadas */
+function fmtQs(a, v){ return isTempo(a) ? fmtDur(v) : nf1.format(v); }
+function fmtRate(a, perHour){
+  if (!isFinite(perHour)) return "—";
+  return isTempo(a) ? fmtDur(perHour) + "/h" : nf1.format(perHour) + " " + a.unidade + "/h";
+}
+function fmtHoras(min){
+  const h = min/60;
+  return (h >= 10 ? nf0.format(h) : nf1.format(h)) + " h";
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+/* ============================================================
+   MOTOR DE CÁLCULO
+   ============================================================ */
+function totalDone(a){
+  return (a.feitoInicial || 0) + a.registros.reduce((s,r) => s + r.qtd, 0);
+}
+function doneBetween(a, ini, fim){
+  return a.registros.reduce((s,r) => {
+    const t = new Date(r.ts);
+    return (t >= ini && t < fim) ? s + r.qtd : s;
+  }, 0);
+}
+
+function metrics(act, now){
+  now = now || new Date();
+  const start = atMin(fromYmd(act.inicio), 0);
+  const end   = atMin(fromYmd(act.fim), 24*60);
+  const t     = now < start ? start : (now > end ? end : now);
+
+  const capTotal = capMin(act, start, end);
+  const capPast  = capMin(act, start, t);
+  const capLeft  = capMin(act, t, end);
+
+  const done      = totalDone(act);
+  const remaining = Math.max(0, act.meta - done);
+  const expected  = capTotal > 0 ? act.meta * capPast / capTotal : 0;
+  const balance   = done - expected;
+
+  const ratePlan = capTotal > 0 ? act.meta / (capTotal/60) : 0;
+  const rateReal = capPast  > 0 ? done / (capPast/60) : 0;
+  const rateNeed = remaining <= 0 ? 0 : (capLeft > 0 ? remaining / (capLeft/60) : Infinity);
+
+  // quanto falta até o fim da hora corrente e até o fim de hoje
+  const hourEnd = new Date(now); hourEnd.setMinutes(60,0,0);
+  const dayEnd  = atMin(now, 24*60);
+  const capHour = capMin(act, t, hourEnd < end ? hourEnd : end);
+  const capDay  = capMin(act, t, dayEnd  < end ? dayEnd  : end);
+  const needHour = isFinite(rateNeed) ? rateNeed * capHour/60 : 0;
+  const needDay  = isFinite(rateNeed) ? rateNeed * capDay/60  : 0;
+
+  const tol = Math.max(act.meta * 0.02, isTempo(act) ? 5 : 1);
+  let estado;
+  if (remaining <= 0) estado = "concluida";
+  else if (capTotal <= 0) estado = "semcap";
+  else if (now > end) estado = "vencido";
+  else if (balance > tol) estado = "adiantado";
+  else if (balance < -tol) estado = "atrasado";
+  else estado = "emdia";
+
+  let fimProjetado = null;
+  if (remaining > 0 && rateReal > 0) fimProjetado = addWorkMinutes(act, now, (remaining/rateReal)*60);
+
+  return { start, end, t, capTotal, capPast, capLeft, done, remaining, expected, balance,
+           ratePlan, rateReal, rateNeed, capHour, capDay, needHour, needDay, estado, fimProjetado, now };
+}
+
+/* Fatias de uma hora dentro das janelas de um dia. */
+function slotsForDay(act, d){
+  const out = [];
+  if (act.dias.indexOf(d.getDay()) < 0) return out;
+  for (const w of janelas(act)) {
+    const s = parseHM(w.de), e = parseHM(w.ate);
+    if (e <= s) continue;
+    let c = s;
+    while (c < e) {
+      const next = Math.min(e, (Math.floor(c/60)+1) * 60);
+      out.push({ ini: atMin(d, c), fim: atMin(d, next) });
+      c = next;
+    }
+  }
+  return out;
+}
+
+function activeDays(act){
+  const out = [];
+  const cur = fromYmd(act.inicio), last = fromYmd(act.fim);
+  let guard = 0;
+  while (cur <= last && guard++ < 400) {
+    if (act.dias.indexOf(cur.getDay()) >= 0) out.push(new Date(cur));
+    cur.setDate(cur.getDate()+1);
+  }
+  return out;
+}
+
+/* ============================================================
+   ESTADO DA INTERFACE
+   ============================================================ */
+let mapDay = null;      // dia mostrado no mapa (null = hoje)
+let lastLog = null;     // último lançamento, para "desfazer"
+let toastTimer = null;
+
+function acts(){ return store.acts.filter(a => a.status !== "concluida"); }
+function current(){
+  const list = acts();
+  if (!list.length) return null;
+  const f = list.filter(a => a.id === store.sel)[0];
+  return f || list[0];
+}
+function actById(id){ return store.acts.filter(a => a.id === id)[0]; }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ============================================================
+   RENDER — abas
+   ============================================================ */
+function renderTabs(){
+  const list = acts(), cur = current();
+  const el = document.getElementById("tabs");
+  el.innerHTML =
+    list.map(a =>
+      '<button class="tab" role="tab" aria-selected="' + (cur && a.id === cur.id) + '" data-go="' + a.id + '">' +
+        esc(a.nome) +
+      "</button>"
+    ).join("") +
+    '<button class="tab add" data-new="1">+ Nova</button>';
+}
+
+/* ============================================================
+   RENDER — painel principal
+   ============================================================ */
+function renderPanel(){
+  const panel = document.getElementById("panel");
+  const a = current();
+
+  if (!a) {
+    panel.innerHTML =
+      '<div class="empty">' +
+        "<h2>Nenhuma atividade ativa</h2>" +
+        "<p>Crie uma meta com prazo e os horários que você realmente dedica a ela. " +
+        "O app calcula quanto fazer por hora e refaz a conta sozinho conforme você avança.</p>" +
+        '<button class="btn primary" data-new="1">Criar primeira atividade</button>' +
+      "</div>";
+    return;
+  }
+
+  const m = metrics(a);
+  panel.innerHTML =
+    cardCabecalho(a, m) +
+    cardHero(a, m) +
+    cardProgresso(a, m) +
+    cardNumeros(a, m) +
+    cardMapaDia(a, m) +
+    cardDias(a, m) +
+    cardRegistros(a, m);
+}
+
+function cardCabecalho(a, m){
+  const j = janelas(a).map(w => w.de + "–" + w.ate).join(", ");
+  const ds = DIAS_ORD.filter(d => a.dias.indexOf(d) >= 0).map(d => DIAS_LBL[d]).join(" ");
+  return '<section class="card">' +
+    '<div class="row between">' +
+      "<div>" +
+        "<h1>" + esc(a.nome) + "</h1>" +
+        '<div class="sub">' + fmtQ(a, a.meta) + " · " +
+          ddmm(fromYmd(a.inicio)) + " a " + ddmm(fromYmd(a.fim)) + "</div>" +
+        '<div class="sub">' + esc(ds) + " · " + esc(j) + "</div>" +
+      "</div>" +
+      '<button class="icon" data-edit="' + a.id + '" aria-label="Editar atividade">✎</button>' +
+    "</div>" +
+  "</section>";
+}
+
+function cardHero(a, m){
+  let big, note;
+  if (m.estado === "concluida") {
+    big = "Meta concluída"; note = "Você fez " + fmtQ(a, m.done) + " de " + fmtQ(a, a.meta) + ".";
+  } else if (m.estado === "semcap") {
+    big = "Sem horas úteis"; note = "O período e os horários escolhidos não geram nenhuma hora de trabalho. Ajuste em ✎.";
+  } else if (m.estado === "vencido") {
+    big = "Prazo encerrado"; note = "Faltaram " + fmtQ(a, m.remaining) + ". Estenda o prazo em ✎ para recalcular.";
+  } else {
+    big = fmtRate(a, m.rateNeed);
+    note = "para cumprir a meta no prazo";
+  }
+
+  const bigHtml = (m.estado === "concluida" || m.estado === "semcap" || m.estado === "vencido")
+    ? '<div class="heroNum" style="font-size:26px">' + big + "</div>"
+    : '<div class="heroNum">' + big + "</div>";
+
+  const hourEnd = new Date(m.now); hourEnd.setMinutes(60,0,0);
+  const faixa = String(m.now.getHours()).padStart(2,"0") + "h–" + String(hourEnd.getHours()).padStart(2,"0") + "h";
+  const podeAgora = m.estado === "adiantado" || m.estado === "atrasado" || m.estado === "emdia";
+
+  const saldoTxt = m.estado === "adiantado" ? "+" + fmtQs(a, m.balance) + " adiantado"
+                 : m.estado === "atrasado"  ? "−" + fmtQs(a, -m.balance) + " atrasado"
+                 : m.estado === "emdia"     ? "em dia"
+                 : "—";
+  const saldoCls = m.estado === "adiantado" ? "ok" : m.estado === "atrasado" ? "bad" : "muted";
+
+  let linhas = "";
+  if (podeAgora) {
+    linhas =
+      "<div><span>Nesta hora · " + faixa + "</span><b>" +
+        (m.capHour > 0 ? "faltam " + fmtQs(a, m.needHour) : "fora do horário") + "</b></div>" +
+      "<div><span>Hoje</span><b>" +
+        (m.capDay > 0 ? "faltam " + fmtQs(a, m.needDay) : "sem horas hoje") + "</b></div>";
+  }
+  linhas += '<div><span>Saldo</span><b class="' + saldoCls + '">' + saldoTxt + "</b></div>";
+
+  return '<section class="card hero">' +
+    '<div class="heroLabel">' + (podeAgora ? "Ritmo necessário" : "Situação") + "</div>" +
+    bigHtml +
+    '<div class="heroNote">' + note + "</div>" +
+    '<div class="heroRows">' + linhas + "</div>" +
+  "</section>";
+}
+
+function cardProgresso(a, m){
+  const pct = a.meta > 0 ? Math.min(100, m.done / a.meta * 100) : 0;
+  const pctExp = a.meta > 0 ? Math.min(100, Math.max(0, m.expected / a.meta * 100)) : 0;
+  return '<section class="card">' +
+    "<h2>Progresso</h2>" +
+    '<div class="barWrap">' +
+      '<div class="bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+      '<div class="mark" style="left:calc(' + pctExp.toFixed(1) + '% - 1px)" data-l="previsto"></div>' +
+    "</div>" +
+    '<div class="legend">' +
+      "<span><b>" + fmtQ(a, m.done) + "</b> feitos</span>" +
+      '<span class="muted">' + nf0.format(pct) + "% de " + fmtQs(a, a.meta) + "</span>" +
+    "</div>" +
+  "</section>";
+}
+
+function cardNumeros(a, m){
+  const proj = m.fimProjetado;
+  const prazo = atMin(fromYmd(a.fim), 24*60);
+  let projTxt, projSub;
+  if (m.remaining <= 0) { projTxt = "Concluído"; projSub = "meta atingida"; }
+  else if (!proj) { projTxt = "—"; projSub = "registre algo para projetar"; }
+  else {
+    projTxt = ddmm(proj) + " " + String(proj.getHours()).padStart(2,"0") + ":" + String(proj.getMinutes()).padStart(2,"0");
+    projSub = proj <= prazo ? "dentro do prazo" : "depois do prazo";
+  }
+
+  return '<section class="card">' +
+    "<h2>Números</h2>" +
+    '<dl class="grid" style="margin:0">' +
+      "<div><dt>Falta fazer</dt><dd>" + fmtQs(a, m.remaining) +
+        "<small>de " + fmtQs(a, a.meta) + " " + (isTempo(a) ? "" : esc(a.unidade)) + "</small></dd></div>" +
+      "<div><dt>Tempo restante</dt><dd>" + fmtHoras(m.capLeft) +
+        "<small>úteis até o prazo</small></dd></div>" +
+      "<div><dt>Ritmo do plano</dt><dd>" + fmtRate(a, m.ratePlan) +
+        "<small>meta ÷ " + fmtHoras(m.capTotal) + "</small></dd></div>" +
+      "<div><dt>Seu ritmo real</dt><dd>" + (m.capPast > 0 ? fmtRate(a, m.rateReal) : "—") +
+        "<small>média até agora</small></dd></div>" +
+      '<div style="grid-column:1/-1"><dt>Projeção de término</dt><dd>' + projTxt +
+        '<small class="' + (proj && proj > prazo ? "bad" : "") + '">' + projSub + "</small></dd></div>" +
+    "</dl>" +
+  "</section>";
+}
+
+function cardMapaDia(a, m){
+  const hoje = new Date();
+  const d = mapDay ? fromYmd(mapDay) : new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const slots = slotsForDay(a, d);
+  const label = sameDay(d, hoje) ? "Hoje · " + ddmm(d) : DIAS_LBL[d.getDay()] + " · " + ddmm(d);
+
+  let linhas;
+  if (!slots.length) {
+    linhas = '<p class="muted" style="margin:6px 0">Nenhum horário de trabalho neste dia.</p>';
+  } else {
+    linhas = slots.map(s => {
+      const passado = s.fim <= m.now;
+      const agora = s.ini <= m.now && m.now < s.fim;
+      const dur = (s.fim - s.ini) / MIN;
+      const rate = passado ? m.ratePlan : m.rateNeed;
+      const alvo = isFinite(rate) ? rate * dur / 60 : 0;
+      const feito = doneBetween(a, s.ini, s.fim);
+      const pct = alvo > 0 ? Math.min(100, feito / alvo * 100) : (feito > 0 ? 100 : 0);
+      const cls = agora ? "now" : (feito >= alvo && alvo > 0 ? "done" : (passado ? "" : "fut"));
+      // hora cheia vira faixa ("08–09"); fatia parcial mostra o horário exato ("08:30")
+      const hIni = String(s.ini.getHours()).padStart(2,"0");
+      const hFim = s.fim.getHours() === 0 ? "24" : String(s.fim.getHours()).padStart(2,"0");
+      const rot = (s.ini.getMinutes() === 0 && s.fim.getMinutes() === 0)
+        ? hIni + "–" + hFim
+        : hIni + ":" + String(s.ini.getMinutes()).padStart(2,"0");
+      return '<div class="slot ' + cls + '">' +
+        '<span class="t">' + rot + "</span>" +
+        '<span class="mini"><i style="width:' + pct.toFixed(0) + '%"></i></span>' +
+        '<span class="v">' + fmtQs(a, feito) + " / " + fmtQs(a, alvo) + "</span>" +
+      "</div>";
+    }).join("");
+  }
+
+  return '<section class="card">' +
+    '<div class="row between" style="margin-bottom:8px">' +
+      "<h2 style=\"margin:0\">Mapa do dia · " + label + "</h2>" +
+      '<span class="row" style="gap:6px">' +
+        '<button class="icon" style="width:34px;height:34px" data-day="-1" aria-label="Dia anterior">‹</button>' +
+        '<button class="icon" style="width:34px;height:34px" data-day="1" aria-label="Próximo dia">›</button>' +
+      "</span>" +
+    "</div>" +
+    '<div class="scroller">' + linhas + "</div>" +
+    '<p class="note">Horas já passadas comparam com o ritmo do plano original (' + fmtRate(a, m.ratePlan) +
+      "). Da hora atual em diante, o alvo usa o ritmo recalculado (" + fmtRate(a, m.rateNeed) + ").</p>" +
+  "</section>";
+}
+
+function cardDias(a, m){
+  const hoje = new Date();
+  const dias = activeDays(a);
+  const linhas = dias.map(d => {
+    const ini = atMin(d, 0), fim = atMin(d, 24*60);
+    const cap = capMin(a, ini, fim);
+    const feito = doneBetween(a, ini, fim);
+    const ehHoje = sameDay(d, hoje);
+    const passado = fim <= m.now && !ehHoje;
+    let alvo;
+    if (passado) alvo = m.ratePlan * cap/60;
+    else if (ehHoje) alvo = feito + (isFinite(m.rateNeed) ? m.rateNeed * m.capDay/60 : 0);
+    else alvo = isFinite(m.rateNeed) ? m.rateNeed * cap/60 : 0;
+    const pct = alvo > 0 ? Math.min(100, feito/alvo*100) : (feito > 0 ? 100 : 0);
+    const cls = ehHoje ? "now" : (alvo > 0 && feito >= alvo ? "done" : (passado ? "" : "fut"));
+    return '<div class="slot ' + cls + '">' +
+      '<span class="t">' + (ehHoje ? "hoje" : DIAS_LBL[d.getDay()].toLowerCase() + " " + ddmm(d)) + "</span>" +
+      '<span class="mini"><i style="width:' + pct.toFixed(0) + '%"></i></span>' +
+      '<span class="v">' + fmtQs(a, feito) + " / " + fmtQs(a, alvo) + "</span>" +
+    "</div>";
+  }).join("");
+
+  return '<section class="card">' +
+    "<h2>Distribuição por dia</h2>" +
+    '<div class="scroller">' + (linhas || '<p class="muted">Nenhum dia útil no período.</p>') + "</div>" +
+  "</section>";
+}
+
+function cardRegistros(a, m){
+  const regs = a.registros.slice().sort((x,y) => new Date(y.ts) - new Date(x.ts)).slice(0, 12);
+  const linhas = regs.length ? regs.map(r => {
+    const t = new Date(r.ts);
+    return '<div class="reg">' +
+      "<span>" + (sameDay(t, new Date()) ? "hoje" : ddmm(t)) + " · " +
+        String(t.getHours()).padStart(2,"0") + ":" + String(t.getMinutes()).padStart(2,"0") + "</span>" +
+      '<span class="row" style="gap:4px"><b class="num">' + fmtQ(a, r.qtd) + "</b>" +
+        '<button class="del" data-del="' + r.id + '" aria-label="Apagar lançamento">×</button></span>' +
+    "</div>";
+  }).join("") : '<p class="muted" style="margin:0">Nenhum lançamento ainda.</p>';
+
+  return '<section class="card">' +
+    "<h2>Últimos lançamentos</h2>" + linhas +
+    (a.feitoInicial ? '<p class="note">+ ' + fmtQ(a, a.feitoInicial) + " lançados como progresso inicial.</p>" : "") +
+    '<div class="btns" style="margin-top:14px">' +
+      '<button class="btn" data-done="' + a.id + '">Concluir atividade</button>' +
+    "</div>" +
+  "</section>";
+}
+
+/* ============================================================
+   RENDER — barra de registro rápido
+   ============================================================ */
+function renderQuick(){
+  const q = document.getElementById("quick");
+  const a = current();
+  if (!a) { q.hidden = true; return; }
+  q.hidden = false;
+  const passos = isTempo(a) ? [15, 30, 60] : [1, 5, 10, 25];
+  q.innerHTML =
+    '<div class="lbl">Registrar' + (isTempo(a) ? " minutos" : " " + esc(a.unidade)) + "</div>" +
+    '<div class="inner">' +
+      passos.map(p => '<button class="chip" data-add="' + p + '">+' + p + "</button>").join("") +
+      '<button class="chip edit" data-custom="1" aria-label="Outro valor">✎</button>' +
+    "</div>";
+}
+
+function renderWarn(){
+  const el = document.getElementById("warn");
+  el.innerHTML = storageOK ? "" :
+    '<div class="warnbar"><b>Os dados não estão sendo salvos.</b> Este navegador bloqueou o armazenamento local ' +
+    "(comum em aba anônima). O app funciona nesta sessão, mas tudo se perde ao fechar.</div>";
+}
+
+function renderAll(){
+  renderWarn();
+  renderTabs();
+  renderPanel();
+  renderQuick();
+}
+
+/* ============================================================
+   AÇÕES
+   ============================================================ */
+/* Troca o nó do sheet por um novo a cada abertura: garante que os listeners
+   da tela anterior morram junto com ela, em vez de se acumularem. */
+function freshSheet(){
+  const old = document.getElementById("sheet");
+  const n = document.createElement("div");
+  n.className = "sheet"; n.id = "sheet";
+  old.replaceWith(n);
+  return n;
+}
+
+function toast(msg, undoFn){
+  const el = document.getElementById("toast");
+  el.innerHTML = "<span>" + esc(msg) + "</span>" + (undoFn ? '<button id="undo">desfazer</button>' : "");
+  el.hidden = false;
+  if (undoFn) document.getElementById("undo").onclick = () => { undoFn(); el.hidden = true; };
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 4200);
+}
+
+function logQtd(a, qtd, when){
+  if (!qtd || !isFinite(qtd)) return;
+  const reg = { id: uid(), ts: (when || new Date()).toISOString(), qtd: qtd };
+  a.registros.push(reg);
+  save(); renderAll();
+  toast("+" + fmtQ(a, qtd), () => {
+    a.registros = a.registros.filter(r => r.id !== reg.id);
+    save(); renderAll();
+  });
+}
+
+/* ============================================================
+   FORMULÁRIO DE ATIVIDADE
+   ============================================================ */
+const PRESETS = {
+  processo: { dias:[1,2,3,4,5], janelas:[{de:"08:00",ate:"12:00"},{de:"13:00",ate:"17:00"}] },
+  estudo:   { dias:[0,1,2,3,4,5,6], janelas:[{de:"08:00",ate:"22:00"}] }
+};
+
+let draft = null;
+
+function novaAtividade(){
+  const hoje = new Date();
+  draft = {
+    id: uid(), nome: "", status: "ativa", modo: "quantidade", unidade: "páginas",
+    meta: 0, feitoInicial: 0,
+    inicio: ymd(hoje), fim: endAfterWorkdays(ymd(hoje), 5, PRESETS.processo.dias),
+    dias: PRESETS.processo.dias.slice(),
+    janelas: PRESETS.processo.janelas.map(w => ({ de:w.de, ate:w.ate })),
+    registros: []
+  };
+  abrirForm(true);
+}
+function editarAtividade(id){
+  const a = actById(id);
+  if (!a) return;
+  draft = JSON.parse(JSON.stringify(a));
+  abrirForm(false);
+}
+
+function abrirForm(isNovo){
+  const s = freshSheet();
+  s.innerHTML = formHTML(isNovo);
+  document.getElementById("dlg").showModal();
+  wireForm(isNovo);
+  atualizarPreview();
+}
+
+function formHTML(isNovo){
+  const d = draft;
+  return "<h2>" + (isNovo ? "Nova atividade" : "Editar atividade") + "</h2>" +
+
+    "<label for=\"f_nome\">Nome</label>" +
+    '<input type="text" id="f_nome" value="' + esc(d.nome) + '" placeholder="Ex.: Processo 1234 / Estudo semanal">' +
+
+    "<label>Tipo de meta</label>" +
+    '<div class="seg">' +
+      '<button type="button" data-modo="quantidade" aria-pressed="' + (d.modo==="quantidade") + '">Quantidade</button>' +
+      '<button type="button" data-modo="tempo" aria-pressed="' + (d.modo==="tempo") + '">Tempo</button>' +
+    "</div>" +
+
+    '<div id="f_meta_box"></div>' +
+
+    "<label>Período</label>" +
+    '<div class="f2">' +
+      '<span><input type="date" id="f_ini" value="' + d.inicio + '" aria-label="Início"></span>' +
+      '<span><input type="date" id="f_fim" value="' + d.fim + '" aria-label="Fim"></span>' +
+    "</div>" +
+    '<div class="f2" style="margin-top:8px">' +
+      '<input type="number" id="f_prazo" min="1" step="1" inputmode="numeric" placeholder="prazo em dias úteis">' +
+      '<button type="button" class="btn" id="f_prazo_go" style="flex:0 0 auto">Aplicar prazo</button>' +
+    "</div>" +
+
+    "<label>Dias da semana</label>" +
+    '<div class="days">' +
+      DIAS_ORD.map(n =>
+        '<button type="button" data-dia="' + n + '" aria-pressed="' + (d.dias.indexOf(n)>=0) + '">' + DIAS_LBL[n] + "</button>"
+      ).join("") +
+    "</div>" +
+    '<div class="f2" style="margin-top:8px">' +
+      '<button type="button" class="btn" data-preset="processo">Preset processos</button>' +
+      '<button type="button" class="btn" data-preset="estudo">Preset estudos</button>' +
+    "</div>" +
+
+    "<label>Horários dedicados</label>" +
+    '<div id="f_janelas"></div>' +
+    '<button type="button" class="btn full" id="f_addwin" style="margin-top:4px">+ Adicionar faixa de horário</button>' +
+
+    '<div class="preview" id="f_preview"></div>' +
+
+    '<div class="btns" style="margin-top:18px">' +
+      '<button type="button" class="btn" id="f_cancel">Cancelar</button>' +
+      '<button type="button" class="btn primary" id="f_save">Salvar</button>' +
+    "</div>" +
+    (isNovo ? "" :
+      '<button type="button" class="btn danger full" id="f_del" style="margin-top:8px">Excluir atividade</button>');
+}
+
+function metaBoxHTML(){
+  const d = draft;
+  if (d.modo === "tempo") {
+    return "<label for=\"f_meta\">Meta em horas</label>" +
+      '<div class="f2">' +
+        '<input type="number" id="f_meta" min="0" step="0.25" inputmode="decimal" value="' +
+          (d.meta ? (d.meta/60) : "") + '" placeholder="21">' +
+        '<input type="number" id="f_ini_done" min="0" step="0.25" inputmode="decimal" value="' +
+          (d.feitoInicial ? (d.feitoInicial/60) : "") + '" placeholder="já feito (h)">' +
+      "</div>";
+  }
+  return "<label for=\"f_meta\">Meta e unidade</label>" +
+    '<div class="f2">' +
+      '<input type="number" id="f_meta" min="0" step="1" inputmode="numeric" value="' +
+        (d.meta || "") + '" placeholder="400">' +
+      '<input type="text" id="f_unidade" value="' + esc(d.unidade) + '" placeholder="páginas">' +
+    "</div>" +
+    '<input type="number" id="f_ini_done" min="0" step="1" inputmode="numeric" style="margin-top:8px" value="' +
+      (d.feitoInicial || "") + '" placeholder="já feito (opcional)">';
+}
+
+function janelasHTML(){
+  return draft.janelas.map((w,i) =>
+    '<div class="win">' +
+      '<input type="time" value="' + w.de + '" data-win="de" data-i="' + i + '" aria-label="Início">' +
+      '<input type="time" value="' + w.ate + '" data-win="ate" data-i="' + i + '" aria-label="Fim">' +
+      '<button type="button" data-rmwin="' + i + '" aria-label="Remover faixa">×</button>' +
+    "</div>"
+  ).join("");
+}
+
+function lerForm(){
+  const d = draft;
+  const g = id => document.getElementById(id);
+  d.nome = g("f_nome").value.trim();
+  if (d.modo === "tempo") {
+    d.meta = Math.round((parseFloat(g("f_meta").value) || 0) * 60);
+    d.feitoInicial = Math.round((parseFloat(g("f_ini_done").value) || 0) * 60);
+    d.unidade = "minutos";
+  } else {
+    d.meta = parseFloat(g("f_meta").value) || 0;
+    d.feitoInicial = parseFloat(g("f_ini_done").value) || 0;
+    d.unidade = (g("f_unidade").value || "").trim() || "unidades";
+  }
+  d.inicio = g("f_ini").value || d.inicio;
+  d.fim = g("f_fim").value || d.fim;
+}
+
+function atualizarPreview(){
+  lerForm();
+  const d = draft;
+  const el = document.getElementById("f_preview");
+  const start = atMin(fromYmd(d.inicio), 0), end = atMin(fromYmd(d.fim), 24*60);
+
+  if (end <= start) { el.innerHTML = '<span class="err">A data final precisa ser igual ou depois da inicial.</span>'; return; }
+  if (!d.dias.length) { el.innerHTML = '<span class="err">Selecione ao menos um dia da semana.</span>'; return; }
+  const janInvalida = d.janelas.some(w => parseHM(w.ate) <= parseHM(w.de));
+  if (janInvalida) { el.innerHTML = '<span class="err">Cada faixa precisa terminar depois de começar.</span>'; return; }
+
+  const cap = capMin(d, start, end);
+  if (cap <= 0) { el.innerHTML = '<span class="err">Este período não tem nenhuma hora útil. Revise dias e horários.</span>'; return; }
+  if (!d.meta) { el.innerHTML = '<b>' + fmtHoras(cap) + "</b> úteis no período. Informe a meta para ver o ritmo."; return; }
+
+  const nDias = activeDays(d).length;
+  const rate = d.meta / (cap/60);
+  const porDia = d.meta / nDias;
+  const calib = sugestaoCalibragem(d, cap);
+
+  el.innerHTML =
+    "<b>" + fmtHoras(cap) + "</b> úteis em <b>" + nDias + "</b> dia" + (nDias>1?"s":"") + "<br>" +
+    "Ritmo: <b>" + fmtRate(d, rate) + "</b> · <b>" + fmtQ(d, porDia) + "</b> por dia" +
+    (calib ? '<div class="hint">' + calib + "</div>" : "");
+}
+
+/* Compara a meta pretendida com o ritmo real médio já observado em atividades concluídas. */
+function sugestaoCalibragem(d, cap){
+  const hist = store.acts.filter(a =>
+    a.status === "concluida" && a.modo === d.modo &&
+    (d.modo === "tempo" || a.unidade === d.unidade) && a.ritmoReal > 0
+  );
+  if (!hist.length) return "";
+  const media = hist.reduce((s,a) => s + a.ritmoReal, 0) / hist.length;
+  const horasNec = d.meta / media;
+  const folga = (cap/60) - horasNec;
+  const base = "Seu ritmo real médio é <b>" + fmtRate(d, media) + "</b> (" + hist.length + " atividade" +
+    (hist.length>1?"s":"") + " concluída" + (hist.length>1?"s":"") + "). Nesse ritmo, essa meta pede ~" +
+    nf1.format(horasNec) + " h úteis";
+  return base + (folga < 0 ? " — <b>" + nf1.format(-folga) + " h a mais</b> do que o período oferece." : ", e você tem " + fmtHoras(cap) + ".");
+}
+
+function wireForm(isNovo){
+  const s = document.getElementById("sheet");
+  document.getElementById("f_meta_box").innerHTML = metaBoxHTML();
+  document.getElementById("f_janelas").innerHTML = janelasHTML();
+
+  s.addEventListener("input", atualizarPreview);
+
+  s.addEventListener("click", ev => {
+    const t = ev.target.closest("button");
+    if (!t) return;
+
+    if (t.dataset.modo) {
+      lerForm();
+      draft.modo = t.dataset.modo;
+      if (draft.modo === "tempo") { draft.unidade = "minutos"; }
+      else if (draft.unidade === "minutos") { draft.unidade = "páginas"; }
+      draft.meta = 0; draft.feitoInicial = 0;
+      s.querySelectorAll("[data-modo]").forEach(b => b.setAttribute("aria-pressed", b.dataset.modo === draft.modo));
+      document.getElementById("f_meta_box").innerHTML = metaBoxHTML();
+      atualizarPreview(); return;
+    }
+
+    if (t.dataset.dia !== undefined) {
+      const n = Number(t.dataset.dia);
+      const i = draft.dias.indexOf(n);
+      if (i >= 0) draft.dias.splice(i,1); else draft.dias.push(n);
+      t.setAttribute("aria-pressed", draft.dias.indexOf(n) >= 0);
+      atualizarPreview(); return;
+    }
+
+    if (t.dataset.preset) {
+      const p = PRESETS[t.dataset.preset];
+      draft.dias = p.dias.slice();
+      draft.janelas = p.janelas.map(w => ({ de:w.de, ate:w.ate }));
+      s.querySelectorAll("[data-dia]").forEach(b => b.setAttribute("aria-pressed", draft.dias.indexOf(Number(b.dataset.dia)) >= 0));
+      document.getElementById("f_janelas").innerHTML = janelasHTML();
+      atualizarPreview(); return;
+    }
+
+    if (t.id === "f_addwin") {
+      draft.janelas.push({ de:"19:00", ate:"22:00" });
+      document.getElementById("f_janelas").innerHTML = janelasHTML();
+      atualizarPreview(); return;
+    }
+
+    if (t.dataset.rmwin !== undefined) {
+      if (draft.janelas.length <= 1) { toast("Mantenha ao menos uma faixa de horário"); return; }
+      draft.janelas.splice(Number(t.dataset.rmwin), 1);
+      document.getElementById("f_janelas").innerHTML = janelasHTML();
+      atualizarPreview(); return;
+    }
+
+    if (t.id === "f_prazo_go") {
+      const n = parseInt(document.getElementById("f_prazo").value, 10);
+      if (!n || n < 1) { toast("Informe o prazo em dias úteis"); return; }
+      lerForm();
+      draft.fim = endAfterWorkdays(draft.inicio, n, draft.dias);
+      document.getElementById("f_fim").value = draft.fim;
+      atualizarPreview(); return;
+    }
+
+    if (t.id === "f_cancel") { document.getElementById("dlg").close(); return; }
+
+    if (t.id === "f_del") {
+      if (!confirm("Excluir “" + draft.nome + "” e todos os seus lançamentos?")) return;
+      store.acts = store.acts.filter(a => a.id !== draft.id);
+      save(); document.getElementById("dlg").close(); renderAll(); return;
+    }
+
+    if (t.id === "f_save") {
+      lerForm();
+      if (!draft.nome) { toast("Dê um nome à atividade"); return; }
+      if (!draft.meta || draft.meta <= 0) { toast("Informe a meta"); return; }
+      if (atMin(fromYmd(draft.fim),24*60) <= atMin(fromYmd(draft.inicio),0)) { toast("Período inválido"); return; }
+      if (!draft.dias.length) { toast("Selecione ao menos um dia"); return; }
+      if (capMin(draft, atMin(fromYmd(draft.inicio),0), atMin(fromYmd(draft.fim),24*60)) <= 0) {
+        toast("Esse período não tem horas úteis"); return;
+      }
+      const existente = actById(draft.id);
+      if (existente) Object.assign(existente, draft);
+      else store.acts.push(draft);
+      store.sel = draft.id;
+      save(); document.getElementById("dlg").close(); renderAll();
+    }
+  });
+}
+
+/* ============================================================
+   MENU, HISTÓRICO, BACKUP
+   ============================================================ */
+function abrirMenu(){
+  const s = freshSheet();
+  s.innerHTML = "<h2>Menu</h2>" +
+    '<div class="menuList">' +
+      '<button class="btn" data-new="1">+ Nova atividade</button>' +
+      '<button class="btn" id="m_hist">Histórico e revisão</button>' +
+      '<button class="btn" id="m_backup">Baixar backup</button>' +
+      '<button class="btn" id="m_restore">Restaurar backup</button>' +
+      '<button class="btn" id="m_help">Como o cálculo funciona</button>' +
+      '<button class="btn" id="m_close">Fechar</button>' +
+    "</div>" +
+    '<input type="file" id="m_file" accept="application/json,.json" hidden>';
+  document.getElementById("dlg").showModal();
+
+  document.getElementById("m_close").onclick = () => document.getElementById("dlg").close();
+  document.getElementById("m_hist").onclick = abrirHistorico;
+  document.getElementById("m_help").onclick = abrirAjuda;
+  document.getElementById("m_backup").onclick = baixarBackup;
+  document.getElementById("m_restore").onclick = () => document.getElementById("m_file").click();
+  document.getElementById("m_file").onchange = ev => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        const d = JSON.parse(fr.result);
+        if (!d || !Array.isArray(d.acts)) throw new Error("formato");
+        if (!confirm("Substituir os dados atuais por " + d.acts.length + " atividade(s) do backup?")) return;
+        store = Object.assign({ acts:[], sel:null, theme:store.theme }, d);
+        save(); document.getElementById("dlg").close(); renderAll();
+        toast("Backup restaurado");
+      } catch (e) { toast("Arquivo inválido"); }
+    };
+    fr.readAsText(f);
+  };
+}
+
+async function baixarBackup(){
+  const data = JSON.stringify(store, null, 2);
+  const filename = "ritmo-backup-" + ymd(new Date()) + ".json";
+  if (window.claude && window.claude.downloads) {
+    try { await window.claude.downloads.save({ filename, data }); toast("Backup salvo"); }
+    catch (err) {
+      const code = err && err.code;
+      toast(code === "declined" ? "Backup cancelado" : "Não foi possível salvar o backup");
+    }
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([data], { type:"application/json" }));
+  a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Backup baixado");
+}
+
+function concluirAtividade(id){
+  const a = actById(id);
+  if (!a) return;
+  const m = metrics(a);
+  if (!confirm("Concluir “" + a.nome + "”? Ela sai da lista ativa e vai para o histórico.")) return;
+  a.status = "concluida";
+  a.concluidoEm = new Date().toISOString();
+  a.ritmoReal = m.rateReal;      // congelado para alimentar a calibragem
+  a.ritmoPlano = m.ratePlan;
+  a.realizado = m.done;
+  save(); renderAll();
+  toast("Atividade concluída");
+}
+
+function abrirHistorico(){
+  const s = freshSheet();
+  const hist = store.acts.filter(a => a.status === "concluida")
+    .sort((x,y) => new Date(y.concluidoEm) - new Date(x.concluidoEm));
+
+  const linhas = hist.length ? hist.map(a => {
+    const fim = new Date(a.concluidoEm), prazo = atMin(fromYmd(a.fim), 24*60);
+    const noPrazo = fim <= prazo;
+    const pct = a.meta > 0 ? a.realizado / a.meta * 100 : 0;
+    const desvio = a.ritmoPlano > 0 ? (a.ritmoReal / a.ritmoPlano - 1) * 100 : 0;
+    return '<div class="card" style="margin-bottom:10px">' +
+      '<div class="row between"><b>' + esc(a.nome) + "</b>" +
+        '<span class="' + (noPrazo ? "ok" : "bad") + '" style="font-size:13px">' +
+          (noPrazo ? "no prazo" : "fora do prazo") + "</span></div>" +
+      '<dl class="grid" style="margin-top:10px">' +
+        "<div><dt>Realizado</dt><dd>" + fmtQs(a, a.realizado) + "<small>" + nf0.format(pct) + "% da meta</small></dd></div>" +
+        "<div><dt>Concluído em</dt><dd>" + ddmm(fim) + "<small>prazo " + ddmm(prazo) + "</small></dd></div>" +
+        "<div><dt>Ritmo planejado</dt><dd>" + fmtRate(a, a.ritmoPlano) + "</dd></div>" +
+        "<div><dt>Ritmo real</dt><dd>" + fmtRate(a, a.ritmoReal) +
+          '<small class="' + (desvio >= 0 ? "ok" : "bad") + '">' +
+          (desvio >= 0 ? "+" : "−") + nf0.format(Math.abs(desvio)) + "% vs. plano</small></dd></div>" +
+      "</dl>" +
+      '<button class="btn full" data-reabrir="' + a.id + '" style="margin-top:10px">Reabrir</button>' +
+    "</div>";
+  }).join("") :
+    '<p class="muted">Nenhuma atividade concluída ainda. Quando você concluir a primeira, o ritmo real medido aqui passa a sugerir metas mais realistas no formulário de criação.</p>';
+
+  s.innerHTML = "<h2>Histórico e revisão</h2>" + linhas +
+    '<button class="btn full" id="h_close" style="margin-top:8px">Fechar</button>';
+  if (!document.getElementById("dlg").open) document.getElementById("dlg").showModal();
+  document.getElementById("h_close").onclick = () => document.getElementById("dlg").close();
+  s.querySelectorAll("[data-reabrir]").forEach(b => b.onclick = () => {
+    const a = actById(b.dataset.reabrir);
+    a.status = "ativa"; store.sel = a.id;
+    save(); document.getElementById("dlg").close(); renderAll();
+  });
+}
+
+function abrirAjuda(){
+  const s = freshSheet();
+  s.innerHTML = "<h2>Como o cálculo funciona</h2>" +
+    "<p>Tudo parte de uma única conta: <b>quanto falta ÷ quantas horas úteis sobraram</b>.</p>" +
+    "<p><b>Horas úteis</b> são só as que estão dentro dos dias da semana e das faixas de horário que você marcou. " +
+    "Almoço fora da faixa não conta, fim de semana desmarcado não conta.</p>" +
+    "<p><b>O ritmo se refaz sozinho.</b> Ele é recalculado a cada vez que a tela é desenhada, a partir do que sobrou " +
+    "e do tempo que sobrou. Se você adiantar, ele afrouxa; se atrasar, ele aperta. Não existe botão de recalcular.</p>" +
+    "<p><b>Saldo</b> compara o que você fez com o que o plano original previa para este momento. " +
+    "É o que diz se você está adiantado ou atrasado.</p>" +
+    "<p><b>Projeção de término</b> ignora a meta e usa o seu ritmo real médio para estimar quando isso acaba de verdade.</p>" +
+    "<details style=\"margin-top:14px\"><summary>Exemplos</summary>" +
+      "<p><b>Processo:</b> 400 páginas, 5 dias úteis, seg–sex das 8h–12h e 13h–17h → 40 h úteis → " +
+      "<b>10 páginas/h</b>, 80 por dia.</p>" +
+      "<p><b>Estudos:</b> 21 h por semana, todos os dias das 8h às 22h → 98 h úteis → " +
+      "<b>13 min/h</b>, 3 h por dia.</p>" +
+      "<p><b>Adaptação:</b> se na primeira hora você ler 30 em vez de 10, sobram 370 páginas em 39 h → " +
+      "o ritmo cai para 9,5 páginas/h e as horas seguintes afrouxam.</p>" +
+    "</details>" +
+    '<button class="btn full" id="a_close" style="margin-top:14px">Fechar</button>';
+  if (!document.getElementById("dlg").open) document.getElementById("dlg").showModal();
+  document.getElementById("a_close").onclick = () => document.getElementById("dlg").close();
+}
+
+function pedirValor(){
+  const a = current();
+  if (!a) return;
+  const s = freshSheet();
+  const agora = new Date();
+  const local = agora.getFullYear() + "-" + String(agora.getMonth()+1).padStart(2,"0") + "-" +
+    String(agora.getDate()).padStart(2,"0") + "T" + String(agora.getHours()).padStart(2,"0") + ":" +
+    String(agora.getMinutes()).padStart(2,"0");
+  s.innerHTML = "<h2>Lançar " + (isTempo(a) ? "tempo" : esc(a.unidade)) + "</h2>" +
+    "<label for=\"v_q\">" + (isTempo(a) ? "Minutos" : "Quantidade") + "</label>" +
+    '<input type="number" id="v_q" inputmode="decimal" step="any" placeholder="' + (isTempo(a) ? "45" : "12") + '">' +
+    "<label for=\"v_t\">Quando</label>" +
+    '<input type="datetime-local" id="v_t" value="' + local + '" style="width:100%;min-height:46px;padding:10px 12px;' +
+      'background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--tx);font:inherit">' +
+    '<div class="btns" style="margin-top:18px">' +
+      '<button class="btn" id="v_cancel">Cancelar</button>' +
+      '<button class="btn primary" id="v_ok">Lançar</button>' +
+    "</div>" +
+    '<p class="hint">Use um valor negativo para corrigir um lançamento a mais.</p>';
+  document.getElementById("dlg").showModal();
+  setTimeout(() => document.getElementById("v_q").focus(), 50);
+  document.getElementById("v_cancel").onclick = () => document.getElementById("dlg").close();
+  document.getElementById("v_ok").onclick = () => {
+    const q = parseFloat(document.getElementById("v_q").value);
+    if (!q || !isFinite(q)) { toast("Informe um valor"); return; }
+    const tv = document.getElementById("v_t").value;
+    const when = tv ? new Date(tv) : new Date();
+    document.getElementById("dlg").close();
+    logQtd(a, q, when);
+  };
+}
+
+/* ============================================================
+   EVENTOS GLOBAIS
+   ============================================================ */
+document.addEventListener("click", ev => {
+  const t = ev.target.closest("button");
+  if (!t) return;
+  if (t.closest("#sheet") && !t.dataset.new) return;   // o sheet tem os próprios handlers
+
+  if (t.dataset.new)  { document.getElementById("dlg").close(); novaAtividade(); return; }
+  if (t.dataset.go)   { store.sel = t.dataset.go; mapDay = null; save(); renderAll(); return; }
+  if (t.dataset.edit) { editarAtividade(t.dataset.edit); return; }
+  if (t.dataset.done) { concluirAtividade(t.dataset.done); return; }
+
+  if (t.dataset.add) {
+    const a = current();
+    if (a) logQtd(a, parseFloat(t.dataset.add));
+    return;
+  }
+  if (t.dataset.custom) { pedirValor(); return; }
+
+  if (t.dataset.del) {
+    const a = current();
+    if (!a) return;
+    const reg = a.registros.filter(r => r.id === t.dataset.del)[0];
+    a.registros = a.registros.filter(r => r.id !== t.dataset.del);
+    save(); renderAll();
+    if (reg) toast("Lançamento removido", () => { a.registros.push(reg); save(); renderAll(); });
+    return;
+  }
+
+  if (t.dataset.day) {
+    const base = mapDay ? fromYmd(mapDay) : new Date();
+    base.setDate(base.getDate() + Number(t.dataset.day));
+    mapDay = ymd(base);
+    renderPanel();
+    return;
+  }
+});
+
+/* Tema efetivo: preferência explícita do app, senão a do sistema. */
+function temaEscuroAtivo(){
+  const attr = document.documentElement.getAttribute("data-theme");
+  if (attr) return attr === "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+/* Faz a barra de status do Android acompanhar o app em vez de destoar dele. */
+function syncThemeColor(){
+  const m = document.getElementById("tc");
+  if (m) m.setAttribute("content", temaEscuroAtivo() ? "#15181c" : "#ffffff");
+}
+
+document.getElementById("btnMenu").onclick = abrirMenu;
+document.getElementById("btnTheme").onclick = () => {
+  store.theme = temaEscuroAtivo() ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", store.theme);
+  syncThemeColor();
+  save();
+};
+/* Sem preferência explícita, seguir o sistema quando ele mudar (claro/escuro automático). */
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (!store.theme) syncThemeColor();
+});
+
+document.getElementById("dlg").addEventListener("close", () => { draft = null; });
+
+/* Atualiza o relógio do cálculo sem atrapalhar quem está digitando. */
+setInterval(() => {
+  if (document.getElementById("dlg").open) return;
+  if (document.activeElement && document.activeElement.matches("input,select,textarea")) return;
+  renderPanel();
+}, 30000);
+
+/* ============================================================
+   INÍCIO
+   ============================================================ */
+load();
+if (store.theme) document.documentElement.setAttribute("data-theme", store.theme);
+syncThemeColor();
+renderAll();
+
+/* Service worker: torna o app instalável e capaz de abrir sem rede.
+   A condição é isSecureContext, e não "https:" — assim vale também para
+   http://localhost (que é contexto seguro, e onde este código é testado),
+   continuando a excluir file://.
+   Falha em silêncio se ./sw.js não existir no host: o app segue funcionando, só sem cache. */
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
