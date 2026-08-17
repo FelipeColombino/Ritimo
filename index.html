@@ -45,30 +45,17 @@
 
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-html{background:var(--bg)}          /* evita faixa branca no elástico do Android */
 body{
   background:var(--bg); color:var(--tx);
   font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   -webkit-text-size-adjust:100%;
   padding-bottom:calc(96px + env(safe-area-inset-bottom));
-  /* --- comportamento de app, não de página web --- */
-  overscroll-behavior-y:contain;              /* sem "puxar para atualizar" nem bounce */
-  -webkit-tap-highlight-color:transparent;    /* sem flash azul ao tocar */
-  touch-action:manipulation;                  /* sem atraso de ~300ms do duplo-toque */
-}
-/* Controles não são texto: toque longo não deve selecionar.
-   Conteúdo (nomes, números, ajuda) continua selecionável e copiável. */
-button,.tab,.chip,.slot .t,.heroLabel,.grid dt,label{
-  -webkit-user-select:none;user-select:none;
 }
 .wrap{max-width:620px;margin:0 auto;padding:0 14px}
 h1,h2,h3{margin:0;font-weight:600;font-size:17px}
-b,strong{font-weight:600}
 .num{font-variant-numeric:tabular-nums}
 
-/* ---------- topo ---------- */
-/* Em standalone o app pinta sob a barra de status: o cabeçalho precisa recuar. */
-.top{display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 0 8px}
+.top{display:flex;align-items:center;gap:8px;padding:14px 0 8px}
 .brand{font-weight:600;font-size:16px;letter-spacing:.2px;flex:1}
 .brand span{color:var(--tx2);font-weight:400}
 
@@ -80,7 +67,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 }
 .icon:active{background:var(--surface2)}
 
-/* ---------- abas de atividade ---------- */
 .tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{
@@ -89,9 +75,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   white-space:nowrap;max-width:60vw;overflow:hidden;text-overflow:ellipsis;
 }
 .tab[aria-selected="true"]{background:var(--acc);border-color:var(--acc);color:var(--accTx);font-weight:600}
-.tab.add{color:var(--tx2)}
 
-/* ---------- cards ---------- */
 .card{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
   padding:14px;margin-bottom:12px;box-shadow:var(--sh);
@@ -103,11 +87,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .muted{color:var(--tx2)}
 .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
 
-/* ---------- herói ---------- */
+/* ---------- herói do dia ---------- */
 .hero{text-align:center;padding:20px 14px 8px}
 .heroLabel{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--tx2)}
 .heroNum{font-size:40px;font-weight:600;line-height:1.1;margin:6px 0 2px;font-variant-numeric:tabular-nums}
-.heroNum small{font-size:16px;font-weight:400;color:var(--tx2);margin-left:2px}
+.heroNum.sm{font-size:26px}
 .heroNote{font-size:13px;color:var(--tx2);margin-bottom:14px}
 .heroRows{border-top:1px solid var(--line);text-align:left}
 .heroRows div{
@@ -118,25 +102,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 .heroRows span{color:var(--tx2)}
 .heroRows b{font-variant-numeric:tabular-nums;text-align:right}
 
-/* ---------- progresso ---------- */
 .bar{position:relative;height:10px;background:var(--track);border-radius:999px;overflow:hidden;margin:4px 0 8px}
 .bar i{position:absolute;inset:0 auto 0 0;background:var(--tx2);border-radius:999px;display:block}
-.barWrap{position:relative}
-.mark{position:absolute;top:-3px;width:2px;height:16px;background:var(--tx);border-radius:2px}
-.mark::after{
-  content:attr(data-l);position:absolute;top:18px;left:50%;transform:translateX(-50%);
-  font-size:10px;color:var(--tx2);white-space:nowrap;
-}
-.legend{display:flex;justify-content:space-between;font-size:13px;margin-top:22px}
+.bar i.done{background:var(--ok)}
+.legend{display:flex;justify-content:space-between;font-size:13px}
 
-/* ---------- grade de números ---------- */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .grid div{background:var(--surface);padding:12px}
 .grid dt{font-size:12px;color:var(--tx2)}
 .grid dd{margin:3px 0 0;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
 .grid dd small{font-size:12px;font-weight:400;color:var(--tx2);display:block;margin-top:1px}
 
-/* ---------- listas de slots/dias ---------- */
 .slot{display:grid;grid-template-columns:68px 1fr auto;align-items:center;gap:10px;padding:7px 0;font-size:13px}
 .slot + .slot{border-top:1px solid var(--line)}
 .slot .t{color:var(--tx2);font-variant-numeric:tabular-nums}
@@ -147,18 +123,19 @@ button{font:inherit;color:inherit;cursor:pointer}
 .slot.now + .slot{border-top:0}
 .slot.now .t{color:var(--acc);font-weight:600}
 .slot.now .mini i{background:var(--acc)}
-.slot.done .mini i{background:var(--ok)}
+.slot.ok .mini i{background:var(--ok)}
+/* Faixa passada sem lançamento: fica neutra, nunca vermelha. O tempo dela já foi
+   redistribuído nas horas seguintes — marcar como falha seria punir duas vezes. */
+.slot.pass .t, .slot.pass .v{opacity:.5}
 .slot.fut .mini i{background:var(--track)}
 .scroller{max-height:290px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .note{font-size:12px;color:var(--tx2);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 
-/* ---------- registros ---------- */
 .reg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;font-size:14px}
 .reg + .reg{border-top:1px solid var(--line)}
 .reg .del{background:none;border:0;color:var(--tx2);padding:6px 8px;font-size:15px;border-radius:6px}
 .reg .del:active{background:var(--surface2)}
 
-/* ---------- barra de registro rápido ---------- */
 .quickbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
   background:var(--surface);border-top:1px solid var(--line);
@@ -174,7 +151,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .chip:active{background:var(--accSoft);border-color:var(--acc)}
 .chip.edit{flex:0 0 52px;font-weight:400;color:var(--tx2)}
 
-/* ---------- botões ---------- */
 .btn{
   min-height:46px;padding:0 16px;border-radius:var(--r);
   background:var(--bg);border:1px solid var(--line);color:var(--tx);font-weight:500;
@@ -183,14 +159,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .btn.primary{background:var(--acc);border-color:var(--acc);color:var(--accTx);font-weight:600}
 .btn.danger{color:var(--bad)}
 .btn.full{width:100%}
+.btn.sm{min-height:38px;font-size:13px;padding:0 12px}
 .btns{display:flex;gap:8px}
 .btns .btn{flex:1}
 
-/* ---------- diálogo ---------- */
-dialog{
-  border:0;padding:0;background:transparent;max-width:100%;width:100%;
-  margin:auto auto 0;color:var(--tx);
-}
+dialog{border:0;padding:0;background:transparent;max-width:100%;width:100%;margin:auto auto 0;color:var(--tx)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 .sheet{
   background:var(--bg);border:1px solid var(--line);border-bottom:0;
@@ -198,15 +171,13 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   max-width:620px;margin:0 auto;max-height:88vh;overflow-y:auto;
 }
 .sheet h2{font-size:17px;margin-bottom:14px}
-.sheet .close{position:absolute;right:14px;top:12px}
 @media (min-width:640px){
   dialog{margin:auto}
   .sheet{border:1px solid var(--line);border-radius:14px}
 }
 
-/* ---------- formulário ---------- */
 label{display:block;font-size:12px;color:var(--tx2);margin:14px 0 5px;text-transform:uppercase;letter-spacing:.5px}
-input[type=text],input[type=number],input[type=date],input[type=time],select{
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=datetime-local],select{
   width:100%;min-height:46px;padding:10px 12px;
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
   color:var(--tx);font:inherit;
@@ -217,31 +188,31 @@ input:focus,select:focus,.btn:focus-visible,.chip:focus-visible,.tab:focus-visib
 .f2{display:flex;gap:8px}
 .f2 > *{flex:1;min-width:0}
 .seg{display:flex;gap:6px}
-.seg button{
-  flex:1;min-height:44px;border-radius:var(--r);
-  background:var(--surface);border:1px solid var(--line);color:var(--tx2);
-}
+.seg button{flex:1;min-height:44px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);color:var(--tx2)}
 .seg button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--accTx);font-weight:600}
+
+/* editor de disponibilidade: um chip por dia, com as horas daquele dia embaixo */
 .days{display:flex;gap:5px}
 .days button{
-  flex:1;min-height:44px;border-radius:var(--r);font-size:12px;
+  flex:1;min-height:52px;border-radius:var(--r);font-size:11px;line-height:1.3;
   background:var(--surface);border:1px solid var(--line);color:var(--tx2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
 }
-.days button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--accTx);font-weight:600}
+.days button b{font-size:12px;font-weight:600}
+.days button small{font-variant-numeric:tabular-nums;opacity:.85}
+.days button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--accTx)}
+.days button.vazio{opacity:.5}
 .win{display:flex;gap:6px;align-items:center;margin-bottom:6px}
 .win input{flex:1}
 .win button{flex:0 0 44px;height:46px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);color:var(--tx2)}
-.preview{
-  margin-top:16px;padding:12px;border-radius:var(--r);
-  background:var(--accSoft);border:1px solid var(--line);font-size:14px;
-}
+
+.preview{margin-top:16px;padding:12px;border-radius:var(--r);background:var(--accSoft);border:1px solid var(--line);font-size:14px}
 .preview b{font-variant-numeric:tabular-nums}
 .preview .err{color:var(--bad)}
 .hint{font-size:12px;color:var(--tx2);margin-top:6px}
 .menuList{display:flex;flex-direction:column;gap:8px}
-.menuList .btn{width:100%;text-align:left;justify-content:flex-start;display:flex;align-items:center}
+.menuList .btn{width:100%;text-align:left;display:flex;align-items:center}
 
-/* ---------- avisos e toast ---------- */
 .warnbar{
   background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--warn);
   border-radius:var(--r);padding:11px 12px;margin:0 0 12px;font-size:13px;color:var(--tx)
@@ -253,12 +224,15 @@ input:focus,select:focus,.btn:focus-visible,.chip:focus-visible,.tab:focus-visib
   font-size:14px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 14px rgba(0,0,0,.2);
   max-width:calc(100% - 28px);
 }
+/* Sem isto o `display:flex` acima vence a regra [hidden]{display:none} do navegador
+   (classe tem especificidade maior que atributo) e o toast vazio fica visível para sempre. */
+.toast[hidden]{display:none}
 .toast button{background:none;border:0;color:var(--bg);font-weight:600;text-decoration:underline;padding:0}
 .empty{text-align:center;padding:34px 14px;color:var(--tx2)}
 .empty h2{font-size:17px;color:var(--tx);margin-bottom:8px;text-transform:none;letter-spacing:0}
 .empty p{margin:0 0 18px}
 details summary{cursor:pointer;color:var(--tx2);font-size:13px;padding:4px 0}
-details p, details li{font-size:13px;color:var(--tx2)}
+details p{font-size:13px;color:var(--tx2)}
 </style>
 </head>
 <body>
@@ -286,33 +260,61 @@ details p, details li{font-size:13px;color:var(--tx2)}
    ============================================================ */
 const KEY = "ritmo.v1";
 let storageOK = true;
-let store = { acts: [], sel: null, theme: null };
+let store = { v: 2, acts: [], sel: null, theme: null };
 
 try {
   localStorage.setItem("__ritmo_test", "1");
   localStorage.removeItem("__ritmo_test");
 } catch (e) { storageOK = false; }
 
-function load() {
+/* Converte dados gravados pelo modelo antigo (uma janela para todos os dias,
+   período com data fim) para o modelo de ciclos com janelas por dia da semana. */
+function migrar(d){
+  if (!d || !Array.isArray(d.acts)) return d;
+  d.acts = d.acts.map(a => {
+    if (a.janelas && !Array.isArray(a.janelas)) return a;   // já está no formato novo
+    const jan = {0:[],1:[],2:[],3:[],4:[],5:[],6:[]};
+    (a.dias || []).forEach(n => {
+      jan[n] = (a.janelas || []).map(w => ({ de: w.de, ate: w.ate }));
+    });
+    return {
+      id: a.id, nome: a.nome, status: a.status || "ativa",
+      modo: a.modo, unidade: a.unidade,
+      metaCiclo: a.meta, tipoCiclo: "periodo",
+      duracaoDias: 7, ancora: a.inicio,
+      inicio: a.inicio, fim: a.fim,
+      transportar: false, limitePct: 30,
+      janelas: jan,
+      feitoInicial: a.feitoInicial || 0,
+      registros: a.registros || [],
+      concluidoEm: a.concluidoEm, realizado: a.realizado,
+      ritmoReal: a.ritmoReal, ritmoPlano: a.ritmoPlano
+    };
+  });
+  d.v = 2;
+  return d;
+}
+
+function load(){
   if (!storageOK) return;
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const d = JSON.parse(raw);
+      const d = migrar(JSON.parse(raw));
       if (d && Array.isArray(d.acts)) store = Object.assign(store, d);
     }
   } catch (e) { /* dados corrompidos: começa limpo em vez de travar */ }
 }
-function save() {
+function save(){
   if (!storageOK) return;
   try { localStorage.setItem(KEY, JSON.stringify(store)); }
   catch (e) { storageOK = false; renderAll(); }
 }
 
 /* ============================================================
-   DATAS E HORÁRIOS
+   DATAS
    ============================================================ */
-const MIN = 60000;
+const MIN = 60000, DIA_MS = 86400000;
 const DIAS_LBL = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const DIAS_ORD = [1,2,3,4,5,6,0];
 
@@ -324,63 +326,137 @@ function atMin(d, m){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()
 function parseHM(s){ const p = String(s).split(":").map(Number); return (p[0]||0)*60 + (p[1]||0); }
 function ddmm(d){ return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0"); }
 function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
-function janelas(a){ return a.janelas.slice().sort((x,y)=>parseHM(x.de)-parseHM(y.de)); }
+function hoje0(){ const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+/* Math.round absorve o desvio de 1 h que o horário de verão introduziria. */
+function diasEntre(a, b){ return Math.round((atMin(b,0) - atMin(a,0)) / DIA_MS); }
+function addDias(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
 
-/* Minutos úteis entre dois instantes: só dias-da-semana ativos, só dentro das janelas.
-   Base de todo o resto do cálculo. */
-function capMin(act, from, to){
-  if (!act.dias.length || !act.janelas.length || to <= from) return 0;
+/* ============================================================
+   CAPACIDADE — minutos realmente disponíveis
+   ============================================================ */
+function capMin(a, from, to){
+  if (to <= from) return 0;
   let total = 0, guard = 0;
   const cur = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const last = new Date(to.getFullYear(), to.getMonth(), to.getDate());
   while (cur <= last && guard++ < 3000) {
-    if (act.dias.indexOf(cur.getDay()) >= 0) {
-      for (const w of act.janelas) {
-        const s = atMin(cur, parseHM(w.de)), e = atMin(cur, parseHM(w.ate));
-        if (e <= s) continue;
-        const a = s > from ? s : from, b = e < to ? e : to;
-        if (b > a) total += (b - a) / MIN;
-      }
+    const js = a.janelas[cur.getDay()] || [];
+    for (const w of js) {
+      const s = atMin(cur, parseHM(w.de)), e = atMin(cur, parseHM(w.ate));
+      if (e <= s) continue;
+      const x = s > from ? s : from, y = e < to ? e : to;
+      if (y > x) total += (y - x) / MIN;
     }
     cur.setDate(cur.getDate()+1);
   }
   return total;
 }
-
-/* Caminha para frente pelas janelas de trabalho consumindo N minutos úteis. */
-function addWorkMinutes(act, from, need){
-  if (need <= 0) return new Date(from);
-  if (!act.dias.length || !act.janelas.length) return null;
-  const cur = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-  let left = need, guard = 0;
-  while (guard++ < 3000) {
-    if (act.dias.indexOf(cur.getDay()) >= 0) {
-      for (const w of janelas(act)) {
-        const s = atMin(cur, parseHM(w.de)), e = atMin(cur, parseHM(w.ate));
-        if (e <= s) continue;
-        const a = s > from ? s : from;
-        if (e > a) {
-          const avail = (e - a) / MIN;
-          if (avail >= left) return new Date(a.getTime() + left * MIN);
-          left -= avail;
-        }
-      }
-    }
-    cur.setDate(cur.getDate()+1);
-  }
-  return null;
+function capDoDia(a, d){ return capMin(a, atMin(d,0), atMin(d,24*60)); }
+function janelasDoDia(a, d){
+  return (a.janelas[d.getDay()] || []).slice().sort((x,y) => parseHM(x.de)-parseHM(y.de));
 }
 
-/* Data final a partir de um prazo em dias úteis (o dia de início conta como dia 1). */
-function endAfterWorkdays(startYmd, n, dias){
-  const d = fromYmd(startYmd);
-  let count = 0, guard = 0;
-  if (!dias.length) return startYmd;
-  while (guard++ < 2000) {
-    if (dias.indexOf(d.getDay()) >= 0) { count++; if (count >= n) return ymd(d); }
-    d.setDate(d.getDate()+1);
+/* ============================================================
+   CICLOS
+   ============================================================ */
+function cicloPorIdx(a, idx){
+  if (a.tipoCiclo === "periodo") {
+    return { idx:0, ini: atMin(fromYmd(a.inicio),0), fim: atMin(fromYmd(a.fim),24*60) };
   }
-  return startYmd;
+  const dur = Math.max(1, a.duracaoDias|0);
+  const ini = addDias(atMin(fromYmd(a.ancora),0), idx*dur);
+  return { idx, ini, fim: addDias(ini, dur) };
+}
+function cicloDe(a, d){
+  if (a.tipoCiclo === "periodo") {
+    const c = cicloPorIdx(a, 0);
+    c.dentro = atMin(d,0) >= c.ini && atMin(d,0) < c.fim;
+    return c;
+  }
+  const dur = Math.max(1, a.duracaoDias|0);
+  const idx = Math.floor(diasEntre(fromYmd(a.ancora), d) / dur);
+  const c = cicloPorIdx(a, idx);
+  c.dentro = true;
+  return c;
+}
+
+function feitoEntre(a, ini, fim){
+  return a.registros.reduce((s,r) => {
+    const t = new Date(r.ts);
+    return (t >= ini && t < fim) ? s + r.qtd : s;
+  }, 0);
+}
+function feitoNoCiclo(a, idx){
+  const c = cicloPorIdx(a, idx);
+  return feitoEntre(a, c.ini, c.fim) + (idx === 0 ? (a.feitoInicial||0) : 0);
+}
+
+/* Meta do ciclo depois de aplicar o saldo do ciclo anterior.
+   O teto existe para o lado do débito não virar bola de neve: uma semana ruim
+   não pode gerar uma seguinte impossível, que geraria outra pior ainda. */
+function aplicarSaldo(a, saldo){
+  const base = a.metaCiclo;
+  if (!a.transportar) return base;
+  const lim = base * (Math.max(0, a.limitePct||0) / 100);
+  return Math.max(0, Math.min(base + lim, Math.max(base - lim, base - saldo)));
+}
+/* Saldo que entra no ciclo idx. Recorrência para frente a partir do primeiro ciclo:
+   o saldo anterior já foi consumido ao baixar/subir a meta daquele ciclo, então o
+   novo saldo é apenas o desvio do ciclo que acabou de fechar. */
+function saldoEntrando(a, idx){
+  if (!a.transportar || idx <= 0) return 0;
+  let saldo = 0;
+  for (let i = 0; i < idx && i < 520; i++) {
+    saldo = feitoNoCiclo(a, i) - aplicarSaldo(a, saldo);
+  }
+  return saldo;
+}
+function metaDoCiclo(a, idx){
+  return aplicarSaldo(a, saldoEntrando(a, idx));
+}
+
+/* ============================================================
+   META DO DIA — congelada, proporcional à disponibilidade
+   ============================================================
+   Não é gravada em lugar nenhum: como depende só do que foi feito ANTES de hoje,
+   o valor não se mexe das 00h às 23h59 e se reconstrói igual mesmo depois de
+   dias sem abrir o app. */
+function metaDoDia(a, d){
+  const c = cicloDe(a, d);
+  if (!c.dentro) return 0;
+  const capDia = capDoDia(a, d);
+  if (capDia <= 0) return 0;
+  const diaIni = atMin(d, 0);
+  const feitoAntes = feitoEntre(a, c.ini, diaIni) + (c.idx === 0 ? (a.feitoInicial||0) : 0);
+  const restante = Math.max(0, metaDoCiclo(a, c.idx) - feitoAntes);
+  const capAteFim = capMin(a, diaIni, c.fim);
+  return capAteFim > 0 ? restante * capDia / capAteFim : 0;
+}
+
+/* Alvo de uma faixa de hora: mesma lógica da meta do dia, um nível abaixo.
+   Avaliado no início da faixa, então faixas passadas mantêm o alvo que valia
+   naquela hora e faixas futuras já refletem o que foi feito até agora. */
+function alvoDaFaixa(a, d, ini, fim){
+  const md = metaDoDia(a, d);
+  if (md <= 0) return 0;
+  const falta = Math.max(0, md - feitoEntre(a, atMin(d,0), ini));
+  const capResto = capMin(a, ini, atMin(d, 24*60));
+  return capResto > 0 ? falta * capMin(a, ini, fim) / capResto : 0;
+}
+
+function faixasDoDia(a, d){
+  const out = [];
+  for (const w of janelasDoDia(a, d)) {
+    const s = parseHM(w.de), e = parseHM(w.ate);
+    if (e <= s) continue;
+    let c = s;
+    while (c < e) {
+      const next = Math.min(e, (Math.floor(c/60)+1) * 60);
+      out.push({ ini: atMin(d,c), fim: atMin(d,next) });
+      c = next;
+    }
+  }
+  return out;
 }
 
 /* ============================================================
@@ -397,13 +473,11 @@ function fmtDur(min){
   return m + "min";
 }
 function isTempo(a){ return a.modo === "tempo"; }
-/* valor com unidade: "12 páginas" ou "1h 20min" */
 function fmtQ(a, v){ return isTempo(a) ? fmtDur(v) : nf1.format(v) + " " + a.unidade; }
-/* valor sem unidade, para tabelas apertadas */
 function fmtQs(a, v){ return isTempo(a) ? fmtDur(v) : nf1.format(v); }
-function fmtRate(a, perHour){
-  if (!isFinite(perHour)) return "—";
-  return isTempo(a) ? fmtDur(perHour) + "/h" : nf1.format(perHour) + " " + a.unidade + "/h";
+function fmtRate(a, perHora){
+  if (!isFinite(perHora)) return "—";
+  return isTempo(a) ? fmtDur(perHora) + "/h" : nf1.format(perHora) + " " + a.unidade + "/h";
 }
 function fmtHoras(min){
   const h = min/60;
@@ -414,280 +488,200 @@ function esc(s){
 }
 
 /* ============================================================
-   MOTOR DE CÁLCULO
+   MÉTRICAS
    ============================================================ */
-function totalDone(a){
-  return (a.feitoInicial || 0) + a.registros.reduce((s,r) => s + r.qtd, 0);
-}
-function doneBetween(a, ini, fim){
-  return a.registros.reduce((s,r) => {
-    const t = new Date(r.ts);
-    return (t >= ini && t < fim) ? s + r.qtd : s;
-  }, 0);
-}
-
-function metrics(act, now){
+function metrics(a, now){
   now = now || new Date();
-  const start = atMin(fromYmd(act.inicio), 0);
-  const end   = atMin(fromYmd(act.fim), 24*60);
-  const t     = now < start ? start : (now > end ? end : now);
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const c = cicloDe(a, d);
 
-  const capTotal = capMin(act, start, end);
-  const capPast  = capMin(act, start, t);
-  const capLeft  = capMin(act, t, end);
+  const metaC   = metaDoCiclo(a, c.idx);
+  const feitoC  = feitoNoCiclo(a, c.idx);
+  const restC   = Math.max(0, metaC - feitoC);
+  const saldoAnt= saldoEntrando(a, c.idx);
 
-  const done      = totalDone(act);
-  const remaining = Math.max(0, act.meta - done);
-  const expected  = capTotal > 0 ? act.meta * capPast / capTotal : 0;
-  const balance   = done - expected;
+  const md        = metaDoDia(a, d);
+  const feitoHoje = feitoEntre(a, atMin(d,0), atMin(d,24*60));
+  const faltaHoje = Math.max(0, md - feitoHoje);
 
-  const ratePlan = capTotal > 0 ? act.meta / (capTotal/60) : 0;
-  const rateReal = capPast  > 0 ? done / (capPast/60) : 0;
-  const rateNeed = remaining <= 0 ? 0 : (capLeft > 0 ? remaining / (capLeft/60) : Infinity);
+  const diaFim   = atMin(d, 24*60);
+  const capHoje  = capDoDia(a, d);
+  const capResto = capMin(a, now, diaFim);
+  const ritmoHora= capResto > 0 ? faltaHoje / (capResto/60) : (faltaHoje > 0 ? Infinity : 0);
 
-  // quanto falta até o fim da hora corrente e até o fim de hoje
-  const hourEnd = new Date(now); hourEnd.setMinutes(60,0,0);
-  const dayEnd  = atMin(now, 24*60);
-  const capHour = capMin(act, t, hourEnd < end ? hourEnd : end);
-  const capDay  = capMin(act, t, dayEnd  < end ? dayEnd  : end);
-  const needHour = isFinite(rateNeed) ? rateNeed * capHour/60 : 0;
-  const needDay  = isFinite(rateNeed) ? rateNeed * capDay/60  : 0;
+  const horaFim = new Date(now); horaFim.setMinutes(60,0,0);
+  const capHora = capMin(a, now, horaFim < diaFim ? horaFim : diaFim);
+  const faltaHora = isFinite(ritmoHora) ? ritmoHora * capHora/60 : 0;
 
-  const tol = Math.max(act.meta * 0.02, isTempo(act) ? 5 : 1);
+  // Próxima faixa disponível hoje, para quando o momento atual está fora do horário
+  let proxima = null;
+  for (const f of faixasDoDia(a, d)) { if (f.ini > now) { proxima = f; break; } }
+
+  /* Transbordo: o que ainda falta hoje cabe no que sobrou de janela?
+     Em modo tempo a comparação é direta (ambos em minutos); em quantidade,
+     converte pelo ritmo que o próprio plano do ciclo pressupõe. */
+  const capCicloTotal = capMin(a, c.ini, c.fim);
+  const ritmoPlano = capCicloTotal > 0 ? metaC / (capCicloTotal/60) : 0;
+  const minNecessarios = isTempo(a) ? faltaHoje : (ritmoPlano > 0 ? faltaHoje/ritmoPlano*60 : Infinity);
+  const transborda = faltaHoje > 0 && minNecessarios > capResto + 1;
+  const cabeAinda = isTempo(a) ? capResto : ritmoPlano * capResto/60;
+  const sobra = Math.max(0, faltaHoje - cabeAinda);
+
   let estado;
-  if (remaining <= 0) estado = "concluida";
-  else if (capTotal <= 0) estado = "semcap";
-  else if (now > end) estado = "vencido";
-  else if (balance > tol) estado = "adiantado";
-  else if (balance < -tol) estado = "atrasado";
-  else estado = "emdia";
+  if (!c.dentro)               estado = "fora";
+  else if (capHoje <= 0)       estado = "folga";
+  else if (md <= 0)            estado = "ciclocheio";
+  else if (feitoHoje >= md)    estado = "cumprido";
+  else if (capResto <= 0)      estado = "encerrado";
+  else if (transborda)         estado = "transborda";
+  else                         estado = "andamento";
 
-  let fimProjetado = null;
-  if (remaining > 0 && rateReal > 0) fimProjetado = addWorkMinutes(act, now, (remaining/rateReal)*60);
-
-  return { start, end, t, capTotal, capPast, capLeft, done, remaining, expected, balance,
-           ratePlan, rateReal, rateNeed, capHour, capDay, needHour, needDay, estado, fimProjetado, now };
-}
-
-/* Fatias de uma hora dentro das janelas de um dia. */
-function slotsForDay(act, d){
-  const out = [];
-  if (act.dias.indexOf(d.getDay()) < 0) return out;
-  for (const w of janelas(act)) {
-    const s = parseHM(w.de), e = parseHM(w.ate);
-    if (e <= s) continue;
-    let c = s;
-    while (c < e) {
-      const next = Math.min(e, (Math.floor(c/60)+1) * 60);
-      out.push({ ini: atMin(d, c), fim: atMin(d, next) });
-      c = next;
-    }
-  }
-  return out;
-}
-
-function activeDays(act){
-  const out = [];
-  const cur = fromYmd(act.inicio), last = fromYmd(act.fim);
-  let guard = 0;
-  while (cur <= last && guard++ < 400) {
-    if (act.dias.indexOf(cur.getDay()) >= 0) out.push(new Date(cur));
-    cur.setDate(cur.getDate()+1);
-  }
-  return out;
+  return { d, c, metaC, feitoC, restC, saldoAnt, md, feitoHoje, faltaHoje,
+           capHoje, capResto, ritmoHora, capHora, faltaHora, proxima,
+           transborda, sobra, ritmoPlano, capCicloTotal, estado, now };
 }
 
 /* ============================================================
    ESTADO DA INTERFACE
    ============================================================ */
-let mapDay = null;      // dia mostrado no mapa (null = hoje)
-let lastLog = null;     // último lançamento, para "desfazer"
-let toastTimer = null;
+let mapDay = null, toastTimer = null;
 
 function acts(){ return store.acts.filter(a => a.status !== "concluida"); }
 function current(){
   const list = acts();
   if (!list.length) return null;
-  const f = list.filter(a => a.id === store.sel)[0];
-  return f || list[0];
+  return list.filter(a => a.id === store.sel)[0] || list[0];
 }
 function actById(id){ return store.acts.filter(a => a.id === id)[0]; }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
 /* ============================================================
-   RENDER — abas
+   RENDER
    ============================================================ */
 function renderTabs(){
   const list = acts(), cur = current();
-  const el = document.getElementById("tabs");
-  el.innerHTML =
+  document.getElementById("tabs").innerHTML =
     list.map(a =>
-      '<button class="tab" role="tab" aria-selected="' + (cur && a.id === cur.id) + '" data-go="' + a.id + '">' +
-        esc(a.nome) +
-      "</button>"
+      '<button class="tab" role="tab" aria-selected="' + (!!cur && a.id === cur.id) + '" data-go="' + a.id + '">' +
+        esc(a.nome) + "</button>"
     ).join("") +
-    '<button class="tab add" data-new="1">+ Nova</button>';
+    '<button class="tab" data-new="1">+ Nova</button>';
 }
 
-/* ============================================================
-   RENDER — painel principal
-   ============================================================ */
 function renderPanel(){
   const panel = document.getElementById("panel");
   const a = current();
-
   if (!a) {
     panel.innerHTML =
       '<div class="empty">' +
         "<h2>Nenhuma atividade ativa</h2>" +
-        "<p>Crie uma meta com prazo e os horários que você realmente dedica a ela. " +
-        "O app calcula quanto fazer por hora e refaz a conta sozinho conforme você avança.</p>" +
+        "<p>Defina uma meta, os dias e horários que você realmente tem livres, e o app calcula " +
+        "quanto fazer hoje e nesta hora — reajustando sozinho conforme você avança.</p>" +
         '<button class="btn primary" data-new="1">Criar primeira atividade</button>' +
       "</div>";
     return;
   }
-
   const m = metrics(a);
-  panel.innerHTML =
-    cardCabecalho(a, m) +
-    cardHero(a, m) +
-    cardProgresso(a, m) +
-    cardNumeros(a, m) +
-    cardMapaDia(a, m) +
-    cardDias(a, m) +
-    cardRegistros(a, m);
+  panel.innerHTML = cardTopo(a,m) + cardHoje(a,m) + cardMapa(a,m) + cardCiclo(a,m) + cardDias(a,m) + cardRegistros(a,m);
 }
 
-function cardCabecalho(a, m){
-  const j = janelas(a).map(w => w.de + "–" + w.ate).join(", ");
-  const ds = DIAS_ORD.filter(d => a.dias.indexOf(d) >= 0).map(d => DIAS_LBL[d]).join(" ");
-  return '<section class="card">' +
-    '<div class="row between">' +
-      "<div>" +
-        "<h1>" + esc(a.nome) + "</h1>" +
-        '<div class="sub">' + fmtQ(a, a.meta) + " · " +
-          ddmm(fromYmd(a.inicio)) + " a " + ddmm(fromYmd(a.fim)) + "</div>" +
-        '<div class="sub">' + esc(ds) + " · " + esc(j) + "</div>" +
-      "</div>" +
-      '<button class="icon" data-edit="' + a.id + '" aria-label="Editar atividade">✎</button>' +
-    "</div>" +
-  "</section>";
+function cardTopo(a, m){
+  const ativos = DIAS_ORD.filter(n => (a.janelas[n]||[]).length);
+  const resumo = ativos.length === 7 ? "todos os dias"
+    : ativos.map(n => DIAS_LBL[n]).join(" ");
+  const ciclo = a.tipoCiclo === "recorrente"
+    ? "a cada " + a.duracaoDias + " dias"
+    : ddmm(fromYmd(a.inicio)) + " a " + ddmm(fromYmd(a.fim));
+  return '<section class="card"><div class="row between"><div>' +
+    "<h1>" + esc(a.nome) + "</h1>" +
+    '<div class="sub">' + fmtQ(a, a.metaCiclo) + " · " + ciclo + "</div>" +
+    '<div class="sub">' + esc(resumo) + "</div>" +
+  '</div><button class="icon" data-edit="' + a.id + '" aria-label="Editar atividade">✎</button></div></section>';
 }
 
-function cardHero(a, m){
-  let big, note;
-  if (m.estado === "concluida") {
-    big = "Meta concluída"; note = "Você fez " + fmtQ(a, m.done) + " de " + fmtQ(a, a.meta) + ".";
-  } else if (m.estado === "semcap") {
-    big = "Sem horas úteis"; note = "O período e os horários escolhidos não geram nenhuma hora de trabalho. Ajuste em ✎.";
-  } else if (m.estado === "vencido") {
-    big = "Prazo encerrado"; note = "Faltaram " + fmtQ(a, m.remaining) + ". Estenda o prazo em ✎ para recalcular.";
-  } else {
-    big = fmtRate(a, m.rateNeed);
-    note = "para cumprir a meta no prazo";
+function cardHoje(a, m){
+  let big, nota, classe = "";
+  switch (m.estado) {
+    case "fora":       big = "Fora do período"; nota = "Hoje não faz parte do período desta atividade."; classe = "sm"; break;
+    case "folga":      big = "Dia livre";       nota = "Nenhum horário marcado para hoje."; classe = "sm"; break;
+    case "ciclocheio": big = "Ciclo cumprido";  nota = "Você já bateu a meta do ciclo. Nada obrigatório hoje."; classe = "sm"; break;
+    case "cumprido":
+      big = "Dia cumprido"; classe = "sm";
+      nota = m.feitoHoje > m.md
+        ? "Meta de " + fmtQ(a, m.md) + " batida, com " + fmtQ(a, m.feitoHoje - m.md) + " de crédito para os próximos dias."
+        : "Meta de " + fmtQ(a, m.md) + " batida.";
+      break;
+    case "encerrado":  big = "Horário encerrado"; classe = "sm";
+      nota = "Faltaram " + fmtQ(a, m.faltaHoje) + ", que vão para os próximos dias."; break;
+    default:
+      big = fmtQs(a, m.faltaHoje);
+      nota = "de " + fmtQ(a, m.md) + " previstos para hoje";
   }
 
-  const bigHtml = (m.estado === "concluida" || m.estado === "semcap" || m.estado === "vencido")
-    ? '<div class="heroNum" style="font-size:26px">' + big + "</div>"
-    : '<div class="heroNum">' + big + "</div>";
-
-  const hourEnd = new Date(m.now); hourEnd.setMinutes(60,0,0);
-  const faixa = String(m.now.getHours()).padStart(2,"0") + "h–" + String(hourEnd.getHours()).padStart(2,"0") + "h";
-  const podeAgora = m.estado === "adiantado" || m.estado === "atrasado" || m.estado === "emdia";
-
-  const saldoTxt = m.estado === "adiantado" ? "+" + fmtQs(a, m.balance) + " adiantado"
-                 : m.estado === "atrasado"  ? "−" + fmtQs(a, -m.balance) + " atrasado"
-                 : m.estado === "emdia"     ? "em dia"
-                 : "—";
-  const saldoCls = m.estado === "adiantado" ? "ok" : m.estado === "atrasado" ? "bad" : "muted";
+  const pct = m.md > 0 ? Math.min(100, m.feitoHoje/m.md*100) : (m.feitoHoje > 0 ? 100 : 0);
+  const cheio = m.md > 0 && m.feitoHoje >= m.md;
 
   let linhas = "";
-  if (podeAgora) {
-    linhas =
-      "<div><span>Nesta hora · " + faixa + "</span><b>" +
-        (m.capHour > 0 ? "faltam " + fmtQs(a, m.needHour) : "fora do horário") + "</b></div>" +
-      "<div><span>Hoje</span><b>" +
-        (m.capDay > 0 ? "faltam " + fmtQs(a, m.needDay) : "sem horas hoje") + "</b></div>";
+  if (m.estado === "andamento" || m.estado === "transborda") {
+    const h1 = String(m.now.getHours()).padStart(2,"0");
+    const h2 = String((m.now.getHours()+1) % 24).padStart(2,"0");
+    linhas += "<div><span>Nesta hora · " + h1 + "h–" + h2 + "h</span><b>" +
+      (m.capHora > 0
+        ? fmtQs(a, m.faltaHora)
+        : (m.proxima ? "livre até " + String(m.proxima.ini.getHours()).padStart(2,"0") + "h" : "fora do horário")) +
+      "</b></div>";
+    linhas += "<div><span>Ritmo necessário</span><b>" + fmtRate(a, m.ritmoHora) + "</b></div>";
   }
-  linhas += '<div><span>Saldo</span><b class="' + saldoCls + '">' + saldoTxt + "</b></div>";
+  linhas += "<div><span>Tempo livre restante hoje</span><b>" + fmtHoras(m.capResto) + "</b></div>";
+
+  const aviso = m.estado === "transborda"
+    ? '<div class="warnbar" style="margin:12px 0 0;text-align:left"><b>Não cabe mais hoje.</b> ' +
+      "No ritmo do plano, o que falta pede mais tempo do que sobrou de janela. " +
+      "Cerca de <b>" + fmtQ(a, m.sobra) + "</b> vai transbordar para os próximos dias.</div>"
+    : "";
 
   return '<section class="card hero">' +
-    '<div class="heroLabel">' + (podeAgora ? "Ritmo necessário" : "Situação") + "</div>" +
-    bigHtml +
-    '<div class="heroNote">' + note + "</div>" +
+    '<div class="heroLabel">' + (m.estado === "andamento" || m.estado === "transborda" ? "Falta hoje" : "Hoje") + "</div>" +
+    '<div class="heroNum ' + classe + '">' + big + "</div>" +
+    '<div class="heroNote">' + nota + "</div>" +
+    '<div class="bar" style="margin-bottom:12px"><i class="' + (cheio ? "done" : "") + '" style="width:' + pct.toFixed(1) + '%"></i></div>' +
     '<div class="heroRows">' + linhas + "</div>" +
+    aviso +
   "</section>";
 }
 
-function cardProgresso(a, m){
-  const pct = a.meta > 0 ? Math.min(100, m.done / a.meta * 100) : 0;
-  const pctExp = a.meta > 0 ? Math.min(100, Math.max(0, m.expected / a.meta * 100)) : 0;
-  return '<section class="card">' +
-    "<h2>Progresso</h2>" +
-    '<div class="barWrap">' +
-      '<div class="bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
-      '<div class="mark" style="left:calc(' + pctExp.toFixed(1) + '% - 1px)" data-l="previsto"></div>' +
-    "</div>" +
-    '<div class="legend">' +
-      "<span><b>" + fmtQ(a, m.done) + "</b> feitos</span>" +
-      '<span class="muted">' + nf0.format(pct) + "% de " + fmtQs(a, a.meta) + "</span>" +
-    "</div>" +
-  "</section>";
-}
-
-function cardNumeros(a, m){
-  const proj = m.fimProjetado;
-  const prazo = atMin(fromYmd(a.fim), 24*60);
-  let projTxt, projSub;
-  if (m.remaining <= 0) { projTxt = "Concluído"; projSub = "meta atingida"; }
-  else if (!proj) { projTxt = "—"; projSub = "registre algo para projetar"; }
-  else {
-    projTxt = ddmm(proj) + " " + String(proj.getHours()).padStart(2,"0") + ":" + String(proj.getMinutes()).padStart(2,"0");
-    projSub = proj <= prazo ? "dentro do prazo" : "depois do prazo";
-  }
-
-  return '<section class="card">' +
-    "<h2>Números</h2>" +
-    '<dl class="grid" style="margin:0">' +
-      "<div><dt>Falta fazer</dt><dd>" + fmtQs(a, m.remaining) +
-        "<small>de " + fmtQs(a, a.meta) + " " + (isTempo(a) ? "" : esc(a.unidade)) + "</small></dd></div>" +
-      "<div><dt>Tempo restante</dt><dd>" + fmtHoras(m.capLeft) +
-        "<small>úteis até o prazo</small></dd></div>" +
-      "<div><dt>Ritmo do plano</dt><dd>" + fmtRate(a, m.ratePlan) +
-        "<small>meta ÷ " + fmtHoras(m.capTotal) + "</small></dd></div>" +
-      "<div><dt>Seu ritmo real</dt><dd>" + (m.capPast > 0 ? fmtRate(a, m.rateReal) : "—") +
-        "<small>média até agora</small></dd></div>" +
-      '<div style="grid-column:1/-1"><dt>Projeção de término</dt><dd>' + projTxt +
-        '<small class="' + (proj && proj > prazo ? "bad" : "") + '">' + projSub + "</small></dd></div>" +
-    "</dl>" +
-  "</section>";
-}
-
-function cardMapaDia(a, m){
-  const hoje = new Date();
-  const d = mapDay ? fromYmd(mapDay) : new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-  const slots = slotsForDay(a, d);
-  const label = sameDay(d, hoje) ? "Hoje · " + ddmm(d) : DIAS_LBL[d.getDay()] + " · " + ddmm(d);
+function cardMapa(a, m){
+  const d = mapDay ? fromYmd(mapDay) : hoje0();
+  const ehHoje = sameDay(d, hoje0());
+  const faixas = faixasDoDia(a, d);
+  const mdDia = metaDoDia(a, d);
+  const label = ehHoje ? "Hoje · " + ddmm(d) : DIAS_LBL[d.getDay()] + " · " + ddmm(d);
 
   let linhas;
-  if (!slots.length) {
-    linhas = '<p class="muted" style="margin:6px 0">Nenhum horário de trabalho neste dia.</p>';
+  if (!faixas.length) {
+    linhas = '<p class="muted" style="margin:6px 0">Nenhum horário marcado neste dia.</p>';
   } else {
-    linhas = slots.map(s => {
-      const passado = s.fim <= m.now;
-      const agora = s.ini <= m.now && m.now < s.fim;
-      const dur = (s.fim - s.ini) / MIN;
-      const rate = passado ? m.ratePlan : m.rateNeed;
-      const alvo = isFinite(rate) ? rate * dur / 60 : 0;
-      const feito = doneBetween(a, s.ini, s.fim);
-      const pct = alvo > 0 ? Math.min(100, feito / alvo * 100) : (feito > 0 ? 100 : 0);
-      const cls = agora ? "now" : (feito >= alvo && alvo > 0 ? "done" : (passado ? "" : "fut"));
-      // hora cheia vira faixa ("08–09"); fatia parcial mostra o horário exato ("08:30")
-      const hIni = String(s.ini.getHours()).padStart(2,"0");
-      const hFim = s.fim.getHours() === 0 ? "24" : String(s.fim.getHours()).padStart(2,"0");
-      const rot = (s.ini.getMinutes() === 0 && s.fim.getMinutes() === 0)
-        ? hIni + "–" + hFim
-        : hIni + ":" + String(s.ini.getMinutes()).padStart(2,"0");
+    /* Referência do "agora" para este dia: no dia corrente é o relógio; em outro
+       dia, o começo dele. O que ainda falta se divide igualmente (por duração)
+       entre as faixas restantes — pular as 8h faz as três seguintes virarem 2/3
+       cada, e não 2/3, 2/2, 2/1 como sairia avaliando faixa a faixa. */
+    const ref = ehHoje ? m.now : atMin(d, 0);
+    const faltaRef = Math.max(0, mdDia - feitoEntre(a, atMin(d,0), ref));
+    const capRef = capMin(a, ref, atMin(d, 24*60));
+
+    linhas = faixas.map(f => {
+      const passou = f.fim <= m.now, agora = f.ini <= m.now && m.now < f.fim;
+      // faixa passada guarda o alvo que valia naquela hora; as demais seguem o plano atual
+      const alvo = (passou && ehHoje)
+        ? alvoDaFaixa(a, d, f.ini, f.fim)
+        : (capRef > 0 ? faltaRef * capMin(a, f.ini > ref ? f.ini : ref, f.fim) / capRef : 0);
+      const feito = feitoEntre(a, f.ini, f.fim);
+      const pct = alvo > 0 ? Math.min(100, feito/alvo*100) : (feito > 0 ? 100 : 0);
+      const cls = agora ? "now" : (alvo > 0 && feito >= alvo ? "ok" : (passou ? "pass" : "fut"));
+      const hi = String(f.ini.getHours()).padStart(2,"0");
+      const hf = f.fim.getHours() === 0 ? "24" : String(f.fim.getHours()).padStart(2,"0");
+      const rot = (f.ini.getMinutes() === 0 && f.fim.getMinutes() === 0)
+        ? hi + "–" + hf : hi + ":" + String(f.ini.getMinutes()).padStart(2,"0");
       return '<div class="slot ' + cls + '">' +
         '<span class="t">' + rot + "</span>" +
         '<span class="mini"><i style="width:' + pct.toFixed(0) + '%"></i></span>' +
@@ -698,78 +692,126 @@ function cardMapaDia(a, m){
 
   return '<section class="card">' +
     '<div class="row between" style="margin-bottom:8px">' +
-      "<h2 style=\"margin:0\">Mapa do dia · " + label + "</h2>" +
+      '<h2 style="margin:0">' + label + " · meta " + fmtQs(a, mdDia) + "</h2>" +
       '<span class="row" style="gap:6px">' +
         '<button class="icon" style="width:34px;height:34px" data-day="-1" aria-label="Dia anterior">‹</button>' +
         '<button class="icon" style="width:34px;height:34px" data-day="1" aria-label="Próximo dia">›</button>' +
       "</span>" +
     "</div>" +
     '<div class="scroller">' + linhas + "</div>" +
-    '<p class="note">Horas já passadas comparam com o ritmo do plano original (' + fmtRate(a, m.ratePlan) +
-      "). Da hora atual em diante, o alvo usa o ritmo recalculado (" + fmtRate(a, m.rateNeed) + ").</p>" +
+    '<p class="note">O alvo de cada faixa é recalculado com o que sobrou da meta do dia dividido ' +
+      "pelas horas que ainda restam. Faixa vazia que passou não é falha: o tempo dela já foi " +
+      "redistribuído nas seguintes.</p>" +
+  "</section>";
+}
+
+function cardCiclo(a, m){
+  const pct = m.metaC > 0 ? Math.min(100, m.feitoC/m.metaC*100) : 0;
+  const diasRest = (() => {
+    let n = 0;
+    for (let x = hoje0(); x < m.c.fim; x = addDias(x,1)) if (capDoDia(a,x) > 0) n++;
+    return n;
+  })();
+
+  const nomeCiclo = a.tipoCiclo === "recorrente"
+    ? (a.duracaoDias === 7 ? "Semana" : "Ciclo de " + a.duracaoDias + " dias")
+    : "Período";
+
+  let ajuste = "";
+  if (a.transportar && Math.abs(m.saldoAnt) > 0.5) {
+    const credito = m.saldoAnt > 0;
+    ajuste = '<p class="note">Meta base ' + fmtQ(a, a.metaCiclo) + ", ajustada para <b>" + fmtQ(a, m.metaC) +
+      "</b> por causa d" + (credito ? "o crédito de " : "o débito de ") + fmtQ(a, Math.abs(m.saldoAnt)) +
+      " do ciclo anterior.</p>";
+  }
+
+  // últimos ciclos fechados, para o transporte de saldo ficar visível
+  let hist = "";
+  if (a.tipoCiclo === "recorrente" && m.c.idx > 0) {
+    const linhas = [];
+    for (let i = Math.max(0, m.c.idx-3); i < m.c.idx; i++) {
+      const ci = cicloPorIdx(a, i), mt = metaDoCiclo(a, i), ft = feitoNoCiclo(a, i);
+      const p = mt > 0 ? Math.min(100, ft/mt*100) : 0;
+      linhas.push('<div class="slot ' + (ft >= mt ? "ok" : "pass") + '">' +
+        '<span class="t">' + ddmm(ci.ini) + "</span>" +
+        '<span class="mini"><i style="width:' + p.toFixed(0) + '%"></i></span>' +
+        '<span class="v">' + fmtQs(a, ft) + " / " + fmtQs(a, mt) + "</span></div>");
+    }
+    if (linhas.length) hist = '<div style="margin-top:12px">' + linhas.join("") + "</div>";
+  }
+
+  return '<section class="card">' +
+    "<h2>" + nomeCiclo + " · " + ddmm(m.c.ini) + " a " + ddmm(addDias(m.c.fim,-1)) + "</h2>" +
+    '<div class="bar"><i class="' + (m.feitoC >= m.metaC ? "done" : "") + '" style="width:' + pct.toFixed(1) + '%"></i></div>' +
+    '<div class="legend"><span><b>' + fmtQ(a, m.feitoC) + "</b> de " + fmtQs(a, m.metaC) + "</span>" +
+      '<span class="muted">' + (m.restC > 0 ? "faltam " + fmtQs(a, m.restC) + " em " + diasRest + " dia" + (diasRest===1?"":"s") : "cumprido") + "</span></div>" +
+    ajuste + hist +
   "</section>";
 }
 
 function cardDias(a, m){
-  const hoje = new Date();
-  const dias = activeDays(a);
-  const linhas = dias.map(d => {
-    const ini = atMin(d, 0), fim = atMin(d, 24*60);
-    const cap = capMin(a, ini, fim);
-    const feito = doneBetween(a, ini, fim);
-    const ehHoje = sameDay(d, hoje);
-    const passado = fim <= m.now && !ehHoje;
-    let alvo;
-    if (passado) alvo = m.ratePlan * cap/60;
-    else if (ehHoje) alvo = feito + (isFinite(m.rateNeed) ? m.rateNeed * m.capDay/60 : 0);
-    else alvo = isFinite(m.rateNeed) ? m.rateNeed * cap/60 : 0;
-    const pct = alvo > 0 ? Math.min(100, feito/alvo*100) : (feito > 0 ? 100 : 0);
-    const cls = ehHoje ? "now" : (alvo > 0 && feito >= alvo ? "done" : (passado ? "" : "fut"));
-    return '<div class="slot ' + cls + '">' +
-      '<span class="t">' + (ehHoje ? "hoje" : DIAS_LBL[d.getDay()].toLowerCase() + " " + ddmm(d)) + "</span>" +
-      '<span class="mini"><i style="width:' + pct.toFixed(0) + '%"></i></span>' +
-      '<span class="v">' + fmtQs(a, feito) + " / " + fmtQs(a, alvo) + "</span>" +
-    "</div>";
-  }).join("");
+  /* Dias passados e hoje mostram a meta congelada que valeu para eles.
+     Dias futuros são projeção: metaDoDia() sozinha responderia "quanto este dia
+     pediria se eu não fizesse mais nada até lá", então cada linha assumiria que
+     todas as anteriores falharam e a soma estouraria a meta do ciclo. O plano
+     divide o que sobra depois de hoje entre os dias que restam. */
+  const hj = hoje0(), fimDeHoje = atMin(hj, 24*60);
+  const resto = Math.max(0, m.metaC - (m.feitoC + m.faltaHoje));
+  const capFuturo = capMin(a, fimDeHoje, m.c.fim);
 
-  return '<section class="card">' +
-    "<h2>Distribuição por dia</h2>" +
-    '<div class="scroller">' + (linhas || '<p class="muted">Nenhum dia útil no período.</p>') + "</div>" +
+  const linhas = [];
+  for (let x = new Date(m.c.ini); x < m.c.fim; x = addDias(x,1)) {
+    const capX = capDoDia(a, x);
+    if (capX <= 0) continue;
+    const ehHoje = sameDay(x, hj);
+    const futuro = atMin(x,0) > atMin(hj,0);
+    const md = futuro
+      ? (capFuturo > 0 ? resto * capX / capFuturo : 0)
+      : metaDoDia(a, x);
+    const feito = feitoEntre(a, atMin(x,0), atMin(x,24*60));
+    const passou = atMin(x,24*60) <= m.now && !ehHoje;
+    const pct = md > 0 ? Math.min(100, feito/md*100) : (feito > 0 ? 100 : 0);
+    const cls = ehHoje ? "now" : (md > 0 && feito >= md ? "ok" : (passou ? "pass" : "fut"));
+    linhas.push('<div class="slot ' + cls + '">' +
+      '<span class="t">' + (ehHoje ? "hoje" : DIAS_LBL[x.getDay()].toLowerCase() + " " + ddmm(x)) + "</span>" +
+      '<span class="mini"><i style="width:' + pct.toFixed(0) + '%"></i></span>' +
+      '<span class="v">' + fmtQs(a, feito) + " / " + fmtQs(a, md) + "</span></div>");
+  }
+  return '<section class="card"><h2>Metas por dia</h2>' +
+    '<div class="scroller">' + (linhas.join("") || '<p class="muted">Nenhum dia com horário neste ciclo.</p>') + "</div>" +
+    '<p class="note">Cada dia recebe uma fatia proporcional às horas livres que tem — um dia curto pede menos ' +
+      "que um dia longo. Os dias à frente são projeção e se movem conforme você avança; o valor de um dia " +
+      "só congela quando ele começa.</p>" +
   "</section>";
 }
 
 function cardRegistros(a, m){
-  const regs = a.registros.slice().sort((x,y) => new Date(y.ts) - new Date(x.ts)).slice(0, 12);
+  const regs = a.registros.slice().sort((x,y) => new Date(y.ts) - new Date(x.ts)).slice(0, 10);
   const linhas = regs.length ? regs.map(r => {
     const t = new Date(r.ts);
-    return '<div class="reg">' +
-      "<span>" + (sameDay(t, new Date()) ? "hoje" : ddmm(t)) + " · " +
-        String(t.getHours()).padStart(2,"0") + ":" + String(t.getMinutes()).padStart(2,"0") + "</span>" +
+    return '<div class="reg"><span>' + (sameDay(t, new Date()) ? "hoje" : ddmm(t)) + " · " +
+      String(t.getHours()).padStart(2,"0") + ":" + String(t.getMinutes()).padStart(2,"0") + "</span>" +
       '<span class="row" style="gap:4px"><b class="num">' + fmtQ(a, r.qtd) + "</b>" +
-        '<button class="del" data-del="' + r.id + '" aria-label="Apagar lançamento">×</button></span>' +
-    "</div>";
+      '<button class="del" data-del="' + r.id + '" aria-label="Apagar lançamento">×</button></span></div>';
   }).join("") : '<p class="muted" style="margin:0">Nenhum lançamento ainda.</p>';
 
-  return '<section class="card">' +
-    "<h2>Últimos lançamentos</h2>" + linhas +
-    (a.feitoInicial ? '<p class="note">+ ' + fmtQ(a, a.feitoInicial) + " lançados como progresso inicial.</p>" : "") +
+  const podeEncerrar = m.estado === "andamento" || m.estado === "transborda";
+  return '<section class="card"><h2>Últimos lançamentos</h2>' + linhas +
     '<div class="btns" style="margin-top:14px">' +
+      (podeEncerrar ? '<button class="btn" data-encerrar="1">Encerrar o dia</button>' : "") +
       '<button class="btn" data-done="' + a.id + '">Concluir atividade</button>' +
     "</div>" +
+    (podeEncerrar ? '<p class="note">Encerrar o dia empurra o que faltou para os próximos, sem ficar cobrando de você o resto de hoje.</p>' : "") +
   "</section>";
 }
 
-/* ============================================================
-   RENDER — barra de registro rápido
-   ============================================================ */
 function renderQuick(){
   const q = document.getElementById("quick");
   const a = current();
   if (!a) { q.hidden = true; return; }
   q.hidden = false;
-  const passos = isTempo(a) ? [15, 30, 60] : [1, 5, 10, 25];
-  q.innerHTML =
-    '<div class="lbl">Registrar' + (isTempo(a) ? " minutos" : " " + esc(a.unidade)) + "</div>" +
+  const passos = isTempo(a) ? [15,30,60] : [1,5,10,25];
+  q.innerHTML = '<div class="lbl">Registrar' + (isTempo(a) ? " minutos" : " " + esc(a.unidade)) + "</div>" +
     '<div class="inner">' +
       passos.map(p => '<button class="chip" data-add="' + p + '">+' + p + "</button>").join("") +
       '<button class="chip edit" data-custom="1" aria-label="Outro valor">✎</button>' +
@@ -777,24 +819,16 @@ function renderQuick(){
 }
 
 function renderWarn(){
-  const el = document.getElementById("warn");
-  el.innerHTML = storageOK ? "" :
-    '<div class="warnbar"><b>Os dados não estão sendo salvos.</b> Este navegador bloqueou o armazenamento local ' +
-    "(comum em aba anônima). O app funciona nesta sessão, mas tudo se perde ao fechar.</div>";
+  document.getElementById("warn").innerHTML = storageOK ? "" :
+    '<div class="warnbar"><b>Os dados não estão sendo salvos.</b> Este navegador bloqueou o armazenamento ' +
+    "local (comum em aba anônima). O app funciona nesta sessão, mas tudo se perde ao fechar.</div>";
 }
 
-function renderAll(){
-  renderWarn();
-  renderTabs();
-  renderPanel();
-  renderQuick();
-}
+function renderAll(){ renderWarn(); renderTabs(); renderPanel(); renderQuick(); }
 
 /* ============================================================
    AÇÕES
    ============================================================ */
-/* Troca o nó do sheet por um novo a cada abertura: garante que os listeners
-   da tela anterior morram junto com ela, em vez de se acumularem. */
 function freshSheet(){
   const old = document.getElementById("sheet");
   const n = document.createElement("div");
@@ -823,32 +857,68 @@ function logQtd(a, qtd, when){
   });
 }
 
+/* Encerrar o dia = registrar que hoje acabou aqui. Guarda a data; a meta dos
+   próximos dias já absorve o que faltou, porque ela olha o que foi feito. */
+function encerrarDia(){
+  const a = current();
+  if (!a) return;
+  const m = metrics(a);
+  if (!confirm("Encerrar hoje com " + fmtQ(a, m.feitoHoje) + " de " + fmtQ(a, m.md) + "?\n" +
+               fmtQ(a, m.faltaHoje) + " vão para os próximos dias.")) return;
+  a.encerradoEm = ymd(new Date());
+  save(); renderAll();
+  toast("Dia encerrado");
+}
+
 /* ============================================================
-   FORMULÁRIO DE ATIVIDADE
+   FORMULÁRIO
    ============================================================ */
 const PRESETS = {
-  processo: { dias:[1,2,3,4,5], janelas:[{de:"08:00",ate:"12:00"},{de:"13:00",ate:"17:00"}] },
-  estudo:   { dias:[0,1,2,3,4,5,6], janelas:[{de:"08:00",ate:"22:00"}] }
+  processo: { modo:"quantidade", unidade:"páginas", tipoCiclo:"periodo",
+    janelas: { 1:[{de:"08:00",ate:"12:00"},{de:"13:00",ate:"17:00"}], 2:"=1", 3:"=1", 4:"=1", 5:"=1" } },
+  estudo: { modo:"tempo", unidade:"minutos", tipoCiclo:"recorrente",
+    janelas: { 1:[{de:"19:00",ate:"22:00"}], 2:"=1", 3:"=1", 4:"=1", 5:"=1",
+               6:[{de:"08:00",ate:"22:00"}], 0:[{de:"08:00",ate:"22:00"}] } }
 };
+function expandirPreset(p){
+  const out = {0:[],1:[],2:[],3:[],4:[],5:[],6:[]};
+  for (const k of Object.keys(p.janelas)) {
+    const v = p.janelas[k];
+    out[k] = (typeof v === "string")
+      ? out[Number(v.slice(1))].map(w => ({de:w.de, ate:w.ate}))
+      : v.map(w => ({de:w.de, ate:w.ate}));
+  }
+  return out;
+}
 
-let draft = null;
+let draft = null, diaEdit = 1;
+
+function segundaMaisRecente(){
+  const d = hoje0();
+  return addDias(d, -((d.getDay() + 6) % 7));
+}
 
 function novaAtividade(){
-  const hoje = new Date();
+  const h = hoje0();
   draft = {
-    id: uid(), nome: "", status: "ativa", modo: "quantidade", unidade: "páginas",
-    meta: 0, feitoInicial: 0,
-    inicio: ymd(hoje), fim: endAfterWorkdays(ymd(hoje), 5, PRESETS.processo.dias),
-    dias: PRESETS.processo.dias.slice(),
-    janelas: PRESETS.processo.janelas.map(w => ({ de:w.de, ate:w.ate })),
-    registros: []
+    id: uid(), nome: "", status: "ativa",
+    modo: "tempo", unidade: "minutos",
+    metaCiclo: 0, tipoCiclo: "recorrente",
+    duracaoDias: 7, ancora: ymd(segundaMaisRecente()),
+    inicio: ymd(h), fim: ymd(addDias(h, 6)),
+    transportar: false, limitePct: 30,
+    janelas: expandirPreset(PRESETS.estudo),
+    feitoInicial: 0, registros: []
   };
+  diaEdit = 1;
   abrirForm(true);
 }
 function editarAtividade(id){
   const a = actById(id);
   if (!a) return;
   draft = JSON.parse(JSON.stringify(a));
+  diaEdit = DIAS_ORD.filter(n => (draft.janelas[n]||[]).length)[0];
+  if (diaEdit === undefined) diaEdit = 1;
   abrirForm(false);
 }
 
@@ -856,231 +926,247 @@ function abrirForm(isNovo){
   const s = freshSheet();
   s.innerHTML = formHTML(isNovo);
   document.getElementById("dlg").showModal();
-  wireForm(isNovo);
-  atualizarPreview();
+  wireForm();
+  redesenharBlocos();
 }
 
 function formHTML(isNovo){
   const d = draft;
   return "<h2>" + (isNovo ? "Nova atividade" : "Editar atividade") + "</h2>" +
+    '<label for="f_nome">Nome</label>' +
+    '<input type="text" id="f_nome" value="' + esc(d.nome) + '" placeholder="Ex.: Estudo semanal">' +
 
-    "<label for=\"f_nome\">Nome</label>" +
-    '<input type="text" id="f_nome" value="' + esc(d.nome) + '" placeholder="Ex.: Processo 1234 / Estudo semanal">' +
+    (isNovo ? '<label>Começar de um modelo</label><div class="f2">' +
+      '<button type="button" class="btn" data-preset="estudo">Estudos</button>' +
+      '<button type="button" class="btn" data-preset="processo">Processos</button></div>' : "") +
 
     "<label>Tipo de meta</label>" +
     '<div class="seg">' +
       '<button type="button" data-modo="quantidade" aria-pressed="' + (d.modo==="quantidade") + '">Quantidade</button>' +
       '<button type="button" data-modo="tempo" aria-pressed="' + (d.modo==="tempo") + '">Tempo</button>' +
     "</div>" +
-
     '<div id="f_meta_box"></div>' +
 
-    "<label>Período</label>" +
-    '<div class="f2">' +
-      '<span><input type="date" id="f_ini" value="' + d.inicio + '" aria-label="Início"></span>' +
-      '<span><input type="date" id="f_fim" value="' + d.fim + '" aria-label="Fim"></span>' +
+    "<label>Ciclo</label>" +
+    '<div class="seg">' +
+      '<button type="button" data-ciclo="recorrente" aria-pressed="' + (d.tipoCiclo==="recorrente") + '">Recorrente</button>' +
+      '<button type="button" data-ciclo="periodo" aria-pressed="' + (d.tipoCiclo==="periodo") + '">Período fixo</button>' +
     "</div>" +
-    '<div class="f2" style="margin-top:8px">' +
-      '<input type="number" id="f_prazo" min="1" step="1" inputmode="numeric" placeholder="prazo em dias úteis">' +
-      '<button type="button" class="btn" id="f_prazo_go" style="flex:0 0 auto">Aplicar prazo</button>' +
-    "</div>" +
+    '<div id="f_ciclo_box"></div>' +
 
-    "<label>Dias da semana</label>" +
-    '<div class="days">' +
-      DIAS_ORD.map(n =>
-        '<button type="button" data-dia="' + n + '" aria-pressed="' + (d.dias.indexOf(n)>=0) + '">' + DIAS_LBL[n] + "</button>"
-      ).join("") +
-    "</div>" +
-    '<div class="f2" style="margin-top:8px">' +
-      '<button type="button" class="btn" data-preset="processo">Preset processos</button>' +
-      '<button type="button" class="btn" data-preset="estudo">Preset estudos</button>' +
-    "</div>" +
-
-    "<label>Horários dedicados</label>" +
-    '<div id="f_janelas"></div>' +
-    '<button type="button" class="btn full" id="f_addwin" style="margin-top:4px">+ Adicionar faixa de horário</button>' +
+    "<label>Dias e horários disponíveis</label>" +
+    '<div class="days" id="f_dias"></div>' +
+    '<div id="f_janelas" style="margin-top:10px"></div>' +
 
     '<div class="preview" id="f_preview"></div>' +
-
     '<div class="btns" style="margin-top:18px">' +
       '<button type="button" class="btn" id="f_cancel">Cancelar</button>' +
       '<button type="button" class="btn primary" id="f_save">Salvar</button>' +
     "</div>" +
-    (isNovo ? "" :
-      '<button type="button" class="btn danger full" id="f_del" style="margin-top:8px">Excluir atividade</button>');
+    (isNovo ? "" : '<button type="button" class="btn danger full" id="f_del" style="margin-top:8px">Excluir atividade</button>');
 }
 
 function metaBoxHTML(){
   const d = draft;
+  const rot = d.tipoCiclo === "recorrente" ? "por ciclo" : "no período";
   if (d.modo === "tempo") {
-    return "<label for=\"f_meta\">Meta em horas</label>" +
-      '<div class="f2">' +
-        '<input type="number" id="f_meta" min="0" step="0.25" inputmode="decimal" value="' +
-          (d.meta ? (d.meta/60) : "") + '" placeholder="21">' +
-        '<input type="number" id="f_ini_done" min="0" step="0.25" inputmode="decimal" value="' +
-          (d.feitoInicial ? (d.feitoInicial/60) : "") + '" placeholder="já feito (h)">' +
-      "</div>";
+    return '<label for="f_meta">Meta em horas ' + rot + "</label>" +
+      '<input type="number" id="f_meta" min="0" step="0.25" inputmode="decimal" value="' +
+        (d.metaCiclo ? d.metaCiclo/60 : "") + '" placeholder="25">';
   }
-  return "<label for=\"f_meta\">Meta e unidade</label>" +
+  return '<label for="f_meta">Meta e unidade ' + rot + "</label>" +
     '<div class="f2">' +
-      '<input type="number" id="f_meta" min="0" step="1" inputmode="numeric" value="' +
-        (d.meta || "") + '" placeholder="400">' +
+      '<input type="number" id="f_meta" min="0" step="1" inputmode="numeric" value="' + (d.metaCiclo || "") + '" placeholder="400">' +
       '<input type="text" id="f_unidade" value="' + esc(d.unidade) + '" placeholder="páginas">' +
+    "</div>";
+}
+
+function cicloBoxHTML(){
+  const d = draft;
+  if (d.tipoCiclo === "periodo") {
+    return '<div class="f2" style="margin-top:10px">' +
+      '<input type="date" id="f_ini" value="' + d.inicio + '" aria-label="Início">' +
+      '<input type="date" id="f_fim" value="' + d.fim + '" aria-label="Fim">' +
+    "</div>";
+  }
+  return '<div class="f2" style="margin-top:10px">' +
+      '<input type="number" id="f_dur" min="1" max="90" step="1" inputmode="numeric" value="' + d.duracaoDias + '" aria-label="Dias por ciclo">' +
+      '<input type="date" id="f_anc" value="' + d.ancora + '" aria-label="Primeiro ciclo começa em">' +
     "</div>" +
-    '<input type="number" id="f_ini_done" min="0" step="1" inputmode="numeric" style="margin-top:8px" value="' +
-      (d.feitoInicial || "") + '" placeholder="já feito (opcional)">';
+    '<p class="hint">Dias por ciclo e data em que o primeiro começou. 7 = semanal.</p>' +
+    '<label style="margin-top:12px">Saldo entre ciclos</label>' +
+    '<div class="seg">' +
+      '<button type="button" data-transp="0" aria-pressed="' + (!d.transportar) + '">Não transportar</button>' +
+      '<button type="button" data-transp="1" aria-pressed="' + (!!d.transportar) + '">Transportar</button>' +
+    "</div>" +
+    (d.transportar
+      ? '<div class="f2" style="margin-top:8px"><input type="number" id="f_lim" min="0" max="100" step="5" ' +
+        'inputmode="numeric" value="' + d.limitePct + '" aria-label="Limite de ajuste em %"></div>' +
+        '<p class="hint">Sobrou tempo, o próximo ciclo afrouxa; faltou, ele aperta — no máximo ±' + d.limitePct +
+        "% da meta base. O teto evita que uma semana ruim gere outra impossível.</p>"
+      : '<p class="hint">Cada ciclo começa do zero, sem herdar sobra nem dívida do anterior.</p>');
+}
+
+function diasHTML(){
+  return DIAS_ORD.map(n => {
+    const cap = (draft.janelas[n]||[]).reduce((s,w) => s + Math.max(0, parseHM(w.ate)-parseHM(w.de)), 0);
+    return '<button type="button" data-dia="' + n + '" aria-pressed="' + (n === diaEdit) + '"' +
+      (cap ? "" : ' class="vazio"') + "><b>" + DIAS_LBL[n] + "</b><small>" +
+      (cap ? fmtHoras(cap).replace(" ","") : "—") + "</small></button>";
+  }).join("");
 }
 
 function janelasHTML(){
-  return draft.janelas.map((w,i) =>
-    '<div class="win">' +
-      '<input type="time" value="' + w.de + '" data-win="de" data-i="' + i + '" aria-label="Início">' +
-      '<input type="time" value="' + w.ate + '" data-win="ate" data-i="' + i + '" aria-label="Fim">' +
-      '<button type="button" data-rmwin="' + i + '" aria-label="Remover faixa">×</button>' +
-    "</div>"
-  ).join("");
+  const js = draft.janelas[diaEdit] || [];
+  return '<div class="row between" style="margin-bottom:8px">' +
+      "<b>" + DIAS_LBL[diaEdit] + "</b>" +
+      '<span class="row" style="gap:6px">' +
+        '<button type="button" class="btn sm" data-copiar="uteis">Aplicar seg–sex</button>' +
+        '<button type="button" class="btn sm" data-copiar="todos">A todos</button>' +
+      "</span></div>" +
+    js.map((w,i) =>
+      '<div class="win">' +
+        '<input type="time" value="' + w.de + '" data-win="de" data-i="' + i + '" aria-label="Início">' +
+        '<input type="time" value="' + w.ate + '" data-win="ate" data-i="' + i + '" aria-label="Fim">' +
+        '<button type="button" data-rmwin="' + i + '" aria-label="Remover faixa">×</button>' +
+      "</div>").join("") +
+    '<button type="button" class="btn full sm" data-addwin="1">+ Faixa de horário' +
+      (js.length ? "" : " (dia sem horário)") + "</button>";
+}
+
+function redesenharBlocos(){
+  document.getElementById("f_meta_box").innerHTML = metaBoxHTML();
+  document.getElementById("f_ciclo_box").innerHTML = cicloBoxHTML();
+  document.getElementById("f_dias").innerHTML = diasHTML();
+  document.getElementById("f_janelas").innerHTML = janelasHTML();
+  atualizarPreview();
 }
 
 function lerForm(){
-  const d = draft;
-  const g = id => document.getElementById(id);
-  d.nome = g("f_nome").value.trim();
-  if (d.modo === "tempo") {
-    d.meta = Math.round((parseFloat(g("f_meta").value) || 0) * 60);
-    d.feitoInicial = Math.round((parseFloat(g("f_ini_done").value) || 0) * 60);
-    d.unidade = "minutos";
-  } else {
-    d.meta = parseFloat(g("f_meta").value) || 0;
-    d.feitoInicial = parseFloat(g("f_ini_done").value) || 0;
-    d.unidade = (g("f_unidade").value || "").trim() || "unidades";
+  const d = draft, g = id => document.getElementById(id);
+  if (g("f_nome")) d.nome = g("f_nome").value.trim();
+  if (g("f_meta")) {
+    const v = parseFloat(g("f_meta").value) || 0;
+    d.metaCiclo = d.modo === "tempo" ? Math.round(v*60) : v;
   }
-  d.inicio = g("f_ini").value || d.inicio;
-  d.fim = g("f_fim").value || d.fim;
+  if (g("f_unidade")) d.unidade = (g("f_unidade").value || "").trim() || "unidades";
+  if (d.modo === "tempo") d.unidade = "minutos";
+  if (g("f_ini")) d.inicio = g("f_ini").value || d.inicio;
+  if (g("f_fim")) d.fim = g("f_fim").value || d.fim;
+  if (g("f_dur")) d.duracaoDias = Math.max(1, parseInt(g("f_dur").value,10) || 7);
+  if (g("f_anc")) d.ancora = g("f_anc").value || d.ancora;
+  if (g("f_lim")) d.limitePct = Math.max(0, Math.min(100, parseInt(g("f_lim").value,10) || 0));
+  // faixas do dia em edição
+  const js = draft.janelas[diaEdit] || [];
+  document.querySelectorAll("[data-win]").forEach(inp => {
+    const i = Number(inp.dataset.i);
+    if (js[i]) js[i][inp.dataset.win] = inp.value;
+  });
 }
 
 function atualizarPreview(){
   lerForm();
-  const d = draft;
-  const el = document.getElementById("f_preview");
-  const start = atMin(fromYmd(d.inicio), 0), end = atMin(fromYmd(d.fim), 24*60);
+  const d = draft, el = document.getElementById("f_preview");
+  const temDia = DIAS_ORD.some(n => (d.janelas[n]||[]).length);
+  if (!temDia) { el.innerHTML = '<span class="err">Marque ao menos um horário em algum dia.</span>'; return; }
+  const invalida = DIAS_ORD.some(n => (d.janelas[n]||[]).some(w => parseHM(w.ate) <= parseHM(w.de)));
+  if (invalida) { el.innerHTML = '<span class="err">Cada faixa precisa terminar depois de começar.</span>'; return; }
 
-  if (end <= start) { el.innerHTML = '<span class="err">A data final precisa ser igual ou depois da inicial.</span>'; return; }
-  if (!d.dias.length) { el.innerHTML = '<span class="err">Selecione ao menos um dia da semana.</span>'; return; }
-  const janInvalida = d.janelas.some(w => parseHM(w.ate) <= parseHM(w.de));
-  if (janInvalida) { el.innerHTML = '<span class="err">Cada faixa precisa terminar depois de começar.</span>'; return; }
+  const c = cicloPorIdx(d, 0);
+  if (c.fim <= c.ini) { el.innerHTML = '<span class="err">A data final precisa ser depois da inicial.</span>'; return; }
+  const cap = capMin(d, c.ini, c.fim);
+  if (cap <= 0) { el.innerHTML = '<span class="err">Este ciclo não tem nenhuma hora livre. Revise os dias.</span>'; return; }
+  if (!d.metaCiclo) { el.innerHTML = "<b>" + fmtHoras(cap) + "</b> livres no ciclo. Informe a meta para ver a distribuição."; return; }
 
-  const cap = capMin(d, start, end);
-  if (cap <= 0) { el.innerHTML = '<span class="err">Este período não tem nenhuma hora útil. Revise dias e horários.</span>'; return; }
-  if (!d.meta) { el.innerHTML = '<b>' + fmtHoras(cap) + "</b> úteis no período. Informe a meta para ver o ritmo."; return; }
-
-  const nDias = activeDays(d).length;
-  const rate = d.meta / (cap/60);
-  const porDia = d.meta / nDias;
-  const calib = sugestaoCalibragem(d, cap);
-
-  el.innerHTML =
-    "<b>" + fmtHoras(cap) + "</b> úteis em <b>" + nDias + "</b> dia" + (nDias>1?"s":"") + "<br>" +
-    "Ritmo: <b>" + fmtRate(d, rate) + "</b> · <b>" + fmtQ(d, porDia) + "</b> por dia" +
-    (calib ? '<div class="hint">' + calib + "</div>" : "");
+  // metas por dia do primeiro ciclo, que é o que a distribuição proporcional produz
+  const linhas = [];
+  let n = 0;
+  for (let x = new Date(c.ini); x < c.fim; x = addDias(x,1)) {
+    const cd = capDoDia(d, x);
+    if (cd <= 0) continue;
+    n++;
+    linhas.push(DIAS_LBL[x.getDay()] + " <b>" + fmtQs(d, d.metaCiclo * cd / cap) + "</b>");
+  }
+  el.innerHTML = "<b>" + fmtHoras(cap) + "</b> livres em <b>" + n + "</b> dia" + (n>1?"s":"") +
+    " · ritmo médio <b>" + fmtRate(d, d.metaCiclo/(cap/60)) + "</b>" +
+    '<div class="hint" style="margin-top:8px;line-height:1.9">' + linhas.join(" · ") + "</div>";
 }
 
-/* Compara a meta pretendida com o ritmo real médio já observado em atividades concluídas. */
-function sugestaoCalibragem(d, cap){
-  const hist = store.acts.filter(a =>
-    a.status === "concluida" && a.modo === d.modo &&
-    (d.modo === "tempo" || a.unidade === d.unidade) && a.ritmoReal > 0
-  );
-  if (!hist.length) return "";
-  const media = hist.reduce((s,a) => s + a.ritmoReal, 0) / hist.length;
-  const horasNec = d.meta / media;
-  const folga = (cap/60) - horasNec;
-  const base = "Seu ritmo real médio é <b>" + fmtRate(d, media) + "</b> (" + hist.length + " atividade" +
-    (hist.length>1?"s":"") + " concluída" + (hist.length>1?"s":"") + "). Nesse ritmo, essa meta pede ~" +
-    nf1.format(horasNec) + " h úteis";
-  return base + (folga < 0 ? " — <b>" + nf1.format(-folga) + " h a mais</b> do que o período oferece." : ", e você tem " + fmtHoras(cap) + ".");
-}
-
-function wireForm(isNovo){
+function wireForm(){
   const s = document.getElementById("sheet");
-  document.getElementById("f_meta_box").innerHTML = metaBoxHTML();
-  document.getElementById("f_janelas").innerHTML = janelasHTML();
-
   s.addEventListener("input", atualizarPreview);
-
   s.addEventListener("click", ev => {
     const t = ev.target.closest("button");
     if (!t) return;
 
+    if (t.dataset.preset) {
+      lerForm();
+      const p = PRESETS[t.dataset.preset];
+      draft.modo = p.modo; draft.unidade = p.unidade; draft.tipoCiclo = p.tipoCiclo;
+      draft.metaCiclo = 0;
+      draft.janelas = expandirPreset(p);
+      diaEdit = DIAS_ORD.filter(n => draft.janelas[n].length)[0];
+      s.querySelectorAll("[data-modo]").forEach(b => b.setAttribute("aria-pressed", b.dataset.modo === draft.modo));
+      s.querySelectorAll("[data-ciclo]").forEach(b => b.setAttribute("aria-pressed", b.dataset.ciclo === draft.tipoCiclo));
+      redesenharBlocos(); return;
+    }
     if (t.dataset.modo) {
       lerForm();
       draft.modo = t.dataset.modo;
-      if (draft.modo === "tempo") { draft.unidade = "minutos"; }
-      else if (draft.unidade === "minutos") { draft.unidade = "páginas"; }
-      draft.meta = 0; draft.feitoInicial = 0;
+      draft.unidade = draft.modo === "tempo" ? "minutos" : (draft.unidade === "minutos" ? "páginas" : draft.unidade);
+      draft.metaCiclo = 0;
       s.querySelectorAll("[data-modo]").forEach(b => b.setAttribute("aria-pressed", b.dataset.modo === draft.modo));
-      document.getElementById("f_meta_box").innerHTML = metaBoxHTML();
-      atualizarPreview(); return;
+      redesenharBlocos(); return;
     }
-
-    if (t.dataset.dia !== undefined) {
-      const n = Number(t.dataset.dia);
-      const i = draft.dias.indexOf(n);
-      if (i >= 0) draft.dias.splice(i,1); else draft.dias.push(n);
-      t.setAttribute("aria-pressed", draft.dias.indexOf(n) >= 0);
-      atualizarPreview(); return;
-    }
-
-    if (t.dataset.preset) {
-      const p = PRESETS[t.dataset.preset];
-      draft.dias = p.dias.slice();
-      draft.janelas = p.janelas.map(w => ({ de:w.de, ate:w.ate }));
-      s.querySelectorAll("[data-dia]").forEach(b => b.setAttribute("aria-pressed", draft.dias.indexOf(Number(b.dataset.dia)) >= 0));
-      document.getElementById("f_janelas").innerHTML = janelasHTML();
-      atualizarPreview(); return;
-    }
-
-    if (t.id === "f_addwin") {
-      draft.janelas.push({ de:"19:00", ate:"22:00" });
-      document.getElementById("f_janelas").innerHTML = janelasHTML();
-      atualizarPreview(); return;
-    }
-
-    if (t.dataset.rmwin !== undefined) {
-      if (draft.janelas.length <= 1) { toast("Mantenha ao menos uma faixa de horário"); return; }
-      draft.janelas.splice(Number(t.dataset.rmwin), 1);
-      document.getElementById("f_janelas").innerHTML = janelasHTML();
-      atualizarPreview(); return;
-    }
-
-    if (t.id === "f_prazo_go") {
-      const n = parseInt(document.getElementById("f_prazo").value, 10);
-      if (!n || n < 1) { toast("Informe o prazo em dias úteis"); return; }
+    if (t.dataset.ciclo) {
       lerForm();
-      draft.fim = endAfterWorkdays(draft.inicio, n, draft.dias);
-      document.getElementById("f_fim").value = draft.fim;
-      atualizarPreview(); return;
+      draft.tipoCiclo = t.dataset.ciclo;
+      s.querySelectorAll("[data-ciclo]").forEach(b => b.setAttribute("aria-pressed", b.dataset.ciclo === draft.tipoCiclo));
+      redesenharBlocos(); return;
+    }
+    if (t.dataset.transp !== undefined) {
+      lerForm();
+      draft.transportar = t.dataset.transp === "1";
+      redesenharBlocos(); return;
+    }
+    if (t.dataset.dia !== undefined) { lerForm(); diaEdit = Number(t.dataset.dia); redesenharBlocos(); return; }
+    if (t.dataset.addwin) {
+      lerForm();
+      const js = draft.janelas[diaEdit] || (draft.janelas[diaEdit] = []);
+      js.push(js.length ? { de:"19:00", ate:"22:00" } : { de:"08:00", ate:"12:00" });
+      redesenharBlocos(); return;
+    }
+    if (t.dataset.rmwin !== undefined) {
+      lerForm();
+      draft.janelas[diaEdit].splice(Number(t.dataset.rmwin), 1);
+      redesenharBlocos(); return;
+    }
+    if (t.dataset.copiar) {
+      lerForm();
+      const fonte = (draft.janelas[diaEdit]||[]).map(w => ({de:w.de, ate:w.ate}));
+      const alvos = t.dataset.copiar === "uteis" ? [1,2,3,4,5] : [0,1,2,3,4,5,6];
+      alvos.forEach(n => { draft.janelas[n] = fonte.map(w => ({de:w.de, ate:w.ate})); });
+      redesenharBlocos();
+      toast(t.dataset.copiar === "uteis" ? "Aplicado de segunda a sexta" : "Aplicado a todos os dias");
+      return;
     }
 
     if (t.id === "f_cancel") { document.getElementById("dlg").close(); return; }
-
     if (t.id === "f_del") {
       if (!confirm("Excluir “" + draft.nome + "” e todos os seus lançamentos?")) return;
       store.acts = store.acts.filter(a => a.id !== draft.id);
       save(); document.getElementById("dlg").close(); renderAll(); return;
     }
-
     if (t.id === "f_save") {
       lerForm();
       if (!draft.nome) { toast("Dê um nome à atividade"); return; }
-      if (!draft.meta || draft.meta <= 0) { toast("Informe a meta"); return; }
-      if (atMin(fromYmd(draft.fim),24*60) <= atMin(fromYmd(draft.inicio),0)) { toast("Período inválido"); return; }
-      if (!draft.dias.length) { toast("Selecione ao menos um dia"); return; }
-      if (capMin(draft, atMin(fromYmd(draft.inicio),0), atMin(fromYmd(draft.fim),24*60)) <= 0) {
-        toast("Esse período não tem horas úteis"); return;
-      }
-      const existente = actById(draft.id);
-      if (existente) Object.assign(existente, draft);
-      else store.acts.push(draft);
+      if (!draft.metaCiclo || draft.metaCiclo <= 0) { toast("Informe a meta"); return; }
+      if (!DIAS_ORD.some(n => (draft.janelas[n]||[]).length)) { toast("Marque ao menos um horário"); return; }
+      const c = cicloPorIdx(draft, 0);
+      if (c.fim <= c.ini) { toast("Período inválido"); return; }
+      if (capMin(draft, c.ini, c.fim) <= 0) { toast("Esse ciclo não tem horas livres"); return; }
+      const ex = actById(draft.id);
+      if (ex) Object.assign(ex, draft); else store.acts.push(draft);
       store.sel = draft.id;
       save(); document.getElementById("dlg").close(); renderAll();
     }
@@ -1095,7 +1181,7 @@ function abrirMenu(){
   s.innerHTML = "<h2>Menu</h2>" +
     '<div class="menuList">' +
       '<button class="btn" data-new="1">+ Nova atividade</button>' +
-      '<button class="btn" id="m_hist">Histórico e revisão</button>' +
+      '<button class="btn" id="m_hist">Atividades concluídas</button>' +
       '<button class="btn" id="m_backup">Baixar backup</button>' +
       '<button class="btn" id="m_restore">Restaurar backup</button>' +
       '<button class="btn" id="m_help">Como o cálculo funciona</button>' +
@@ -1115,10 +1201,10 @@ function abrirMenu(){
     const fr = new FileReader();
     fr.onload = () => {
       try {
-        const d = JSON.parse(fr.result);
+        const d = migrar(JSON.parse(fr.result));
         if (!d || !Array.isArray(d.acts)) throw new Error("formato");
         if (!confirm("Substituir os dados atuais por " + d.acts.length + " atividade(s) do backup?")) return;
-        store = Object.assign({ acts:[], sel:null, theme:store.theme }, d);
+        store = Object.assign({ v:2, acts:[], sel:null, theme:store.theme }, d);
         save(); document.getElementById("dlg").close(); renderAll();
         toast("Backup restaurado");
       } catch (e) { toast("Arquivo inválido"); }
@@ -1132,10 +1218,7 @@ async function baixarBackup(){
   const filename = "ritmo-backup-" + ymd(new Date()) + ".json";
   if (window.claude && window.claude.downloads) {
     try { await window.claude.downloads.save({ filename, data }); toast("Backup salvo"); }
-    catch (err) {
-      const code = err && err.code;
-      toast(code === "declined" ? "Backup cancelado" : "Não foi possível salvar o backup");
-    }
+    catch (err) { toast(err && err.code === "declined" ? "Backup cancelado" : "Não foi possível salvar"); }
     return;
   }
   const a = document.createElement("a");
@@ -1148,13 +1231,12 @@ async function baixarBackup(){
 function concluirAtividade(id){
   const a = actById(id);
   if (!a) return;
+  if (!confirm("Concluir “" + a.nome + "”? Ela sai da lista ativa.")) return;
   const m = metrics(a);
-  if (!confirm("Concluir “" + a.nome + "”? Ela sai da lista ativa e vai para o histórico.")) return;
   a.status = "concluida";
   a.concluidoEm = new Date().toISOString();
-  a.ritmoReal = m.rateReal;      // congelado para alimentar a calibragem
-  a.ritmoPlano = m.ratePlan;
-  a.realizado = m.done;
+  a.realizado = m.feitoC;
+  a.metaFinal = m.metaC;
   save(); renderAll();
   toast("Atividade concluída");
 }
@@ -1163,30 +1245,18 @@ function abrirHistorico(){
   const s = freshSheet();
   const hist = store.acts.filter(a => a.status === "concluida")
     .sort((x,y) => new Date(y.concluidoEm) - new Date(x.concluidoEm));
-
   const linhas = hist.length ? hist.map(a => {
-    const fim = new Date(a.concluidoEm), prazo = atMin(fromYmd(a.fim), 24*60);
-    const noPrazo = fim <= prazo;
-    const pct = a.meta > 0 ? a.realizado / a.meta * 100 : 0;
-    const desvio = a.ritmoPlano > 0 ? (a.ritmoReal / a.ritmoPlano - 1) * 100 : 0;
+    const pct = a.metaFinal > 0 ? (a.realizado||0)/a.metaFinal*100 : 0;
     return '<div class="card" style="margin-bottom:10px">' +
-      '<div class="row between"><b>' + esc(a.nome) + "</b>" +
-        '<span class="' + (noPrazo ? "ok" : "bad") + '" style="font-size:13px">' +
-          (noPrazo ? "no prazo" : "fora do prazo") + "</span></div>" +
+      "<b>" + esc(a.nome) + "</b>" +
       '<dl class="grid" style="margin-top:10px">' +
-        "<div><dt>Realizado</dt><dd>" + fmtQs(a, a.realizado) + "<small>" + nf0.format(pct) + "% da meta</small></dd></div>" +
-        "<div><dt>Concluído em</dt><dd>" + ddmm(fim) + "<small>prazo " + ddmm(prazo) + "</small></dd></div>" +
-        "<div><dt>Ritmo planejado</dt><dd>" + fmtRate(a, a.ritmoPlano) + "</dd></div>" +
-        "<div><dt>Ritmo real</dt><dd>" + fmtRate(a, a.ritmoReal) +
-          '<small class="' + (desvio >= 0 ? "ok" : "bad") + '">' +
-          (desvio >= 0 ? "+" : "−") + nf0.format(Math.abs(desvio)) + "% vs. plano</small></dd></div>" +
+        "<div><dt>Realizado</dt><dd>" + fmtQs(a, a.realizado||0) + "<small>" + nf0.format(pct) + "% da meta</small></dd></div>" +
+        "<div><dt>Concluído em</dt><dd>" + ddmm(new Date(a.concluidoEm)) + "</dd></div>" +
       "</dl>" +
-      '<button class="btn full" data-reabrir="' + a.id + '" style="margin-top:10px">Reabrir</button>' +
-    "</div>";
-  }).join("") :
-    '<p class="muted">Nenhuma atividade concluída ainda. Quando você concluir a primeira, o ritmo real medido aqui passa a sugerir metas mais realistas no formulário de criação.</p>';
+      '<button class="btn full" data-reabrir="' + a.id + '" style="margin-top:10px">Reabrir</button></div>';
+  }).join("") : '<p class="muted">Nenhuma atividade concluída ainda.</p>';
 
-  s.innerHTML = "<h2>Histórico e revisão</h2>" + linhas +
+  s.innerHTML = "<h2>Atividades concluídas</h2>" + linhas +
     '<button class="btn full" id="h_close" style="margin-top:8px">Fechar</button>';
   if (!document.getElementById("dlg").open) document.getElementById("dlg").showModal();
   document.getElementById("h_close").onclick = () => document.getElementById("dlg").close();
@@ -1200,21 +1270,20 @@ function abrirHistorico(){
 function abrirAjuda(){
   const s = freshSheet();
   s.innerHTML = "<h2>Como o cálculo funciona</h2>" +
-    "<p>Tudo parte de uma única conta: <b>quanto falta ÷ quantas horas úteis sobraram</b>.</p>" +
-    "<p><b>Horas úteis</b> são só as que estão dentro dos dias da semana e das faixas de horário que você marcou. " +
-    "Almoço fora da faixa não conta, fim de semana desmarcado não conta.</p>" +
-    "<p><b>O ritmo se refaz sozinho.</b> Ele é recalculado a cada vez que a tela é desenhada, a partir do que sobrou " +
-    "e do tempo que sobrou. Se você adiantar, ele afrouxa; se atrasar, ele aperta. Não existe botão de recalcular.</p>" +
-    "<p><b>Saldo</b> compara o que você fez com o que o plano original previa para este momento. " +
-    "É o que diz se você está adiantado ou atrasado.</p>" +
-    "<p><b>Projeção de término</b> ignora a meta e usa o seu ritmo real médio para estimar quando isso acaba de verdade.</p>" +
+    "<p>São três camadas encaixadas, do maior para o menor.</p>" +
+    "<p><b>1. Ciclo</b> — a meta grande, por exemplo 25 h por semana.</p>" +
+    "<p><b>2. Dia</b> — o que sobrou do ciclo, dividido entre os dias que faltam, " +
+    "proporcionalmente às horas livres de cada um: um dia com 3 h livres recebe menos que um com 10 h. " +
+    "<b>Esse número congela quando o dia começa.</b> Fazer mais hoje não muda a meta de hoje — alivia os próximos dias.</p>" +
+    "<p><b>3. Hora</b> — o que falta do dia, dividido pelas horas que ainda restam hoje. " +
+    "Este se move o tempo todo: pulou uma faixa, as seguintes apertam; adiantou, elas afrouxam.</p>" +
+    "<p><b>Transbordo</b> — se o que falta não cabe mais no tempo livre de hoje, o app avisa em vez de " +
+    "pedir o impossível, e o excedente entra na conta dos próximos dias.</p>" +
     "<details style=\"margin-top:14px\"><summary>Exemplos</summary>" +
-      "<p><b>Processo:</b> 400 páginas, 5 dias úteis, seg–sex das 8h–12h e 13h–17h → 40 h úteis → " +
-      "<b>10 páginas/h</b>, 80 por dia.</p>" +
-      "<p><b>Estudos:</b> 21 h por semana, todos os dias das 8h às 22h → 98 h úteis → " +
-      "<b>13 min/h</b>, 3 h por dia.</p>" +
-      "<p><b>Adaptação:</b> se na primeira hora você ler 30 em vez de 10, sobram 370 páginas em 39 h → " +
-      "o ritmo cai para 9,5 páginas/h e as horas seguintes afrouxam.</p>" +
+      "<p><b>25 h por semana, 7 dias iguais:</b> 3 h 34 min por dia. Estudou 10 h no primeiro dia? " +
+      "Sobram 15 h para 6 dias: a meta cai para 2 h 30 min por dia.</p>" +
+      "<p><b>Meta de 2 h entre 8h e 12h:</b> 30 min por faixa. Pulou a das 8h? Passam a ser 40 min " +
+      "(2 h em 3 faixas). Fez 1 h na das 8h? Passam a ser 20 min (1 h em 3 faixas).</p>" +
     "</details>" +
     '<button class="btn full" id="a_close" style="margin-top:14px">Fechar</button>';
   if (!document.getElementById("dlg").open) document.getElementById("dlg").showModal();
@@ -1225,16 +1294,13 @@ function pedirValor(){
   const a = current();
   if (!a) return;
   const s = freshSheet();
-  const agora = new Date();
-  const local = agora.getFullYear() + "-" + String(agora.getMonth()+1).padStart(2,"0") + "-" +
-    String(agora.getDate()).padStart(2,"0") + "T" + String(agora.getHours()).padStart(2,"0") + ":" +
-    String(agora.getMinutes()).padStart(2,"0");
+  const n = new Date();
+  const local = ymd(n) + "T" + String(n.getHours()).padStart(2,"0") + ":" + String(n.getMinutes()).padStart(2,"0");
   s.innerHTML = "<h2>Lançar " + (isTempo(a) ? "tempo" : esc(a.unidade)) + "</h2>" +
-    "<label for=\"v_q\">" + (isTempo(a) ? "Minutos" : "Quantidade") + "</label>" +
+    '<label for="v_q">' + (isTempo(a) ? "Minutos" : "Quantidade") + "</label>" +
     '<input type="number" id="v_q" inputmode="decimal" step="any" placeholder="' + (isTempo(a) ? "45" : "12") + '">' +
-    "<label for=\"v_t\">Quando</label>" +
-    '<input type="datetime-local" id="v_t" value="' + local + '" style="width:100%;min-height:46px;padding:10px 12px;' +
-      'background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--tx);font:inherit">' +
+    '<label for="v_t">Quando</label>' +
+    '<input type="datetime-local" id="v_t" value="' + local + '">' +
     '<div class="btns" style="margin-top:18px">' +
       '<button class="btn" id="v_cancel">Cancelar</button>' +
       '<button class="btn primary" id="v_ok">Lançar</button>' +
@@ -1247,9 +1313,8 @@ function pedirValor(){
     const q = parseFloat(document.getElementById("v_q").value);
     if (!q || !isFinite(q)) { toast("Informe um valor"); return; }
     const tv = document.getElementById("v_t").value;
-    const when = tv ? new Date(tv) : new Date();
     document.getElementById("dlg").close();
-    logQtd(a, q, when);
+    logQtd(a, q, tv ? new Date(tv) : new Date());
   };
 }
 
@@ -1261,17 +1326,13 @@ document.addEventListener("click", ev => {
   if (!t) return;
   if (t.closest("#sheet") && !t.dataset.new) return;   // o sheet tem os próprios handlers
 
-  if (t.dataset.new)  { document.getElementById("dlg").close(); novaAtividade(); return; }
-  if (t.dataset.go)   { store.sel = t.dataset.go; mapDay = null; save(); renderAll(); return; }
-  if (t.dataset.edit) { editarAtividade(t.dataset.edit); return; }
-  if (t.dataset.done) { concluirAtividade(t.dataset.done); return; }
-
-  if (t.dataset.add) {
-    const a = current();
-    if (a) logQtd(a, parseFloat(t.dataset.add));
-    return;
-  }
-  if (t.dataset.custom) { pedirValor(); return; }
+  if (t.dataset.new)      { document.getElementById("dlg").close(); novaAtividade(); return; }
+  if (t.dataset.go)       { store.sel = t.dataset.go; mapDay = null; save(); renderAll(); return; }
+  if (t.dataset.edit)     { editarAtividade(t.dataset.edit); return; }
+  if (t.dataset.done)     { concluirAtividade(t.dataset.done); return; }
+  if (t.dataset.encerrar) { encerrarDia(); return; }
+  if (t.dataset.custom)   { pedirValor(); return; }
+  if (t.dataset.add)      { const a = current(); if (a) logQtd(a, parseFloat(t.dataset.add)); return; }
 
   if (t.dataset.del) {
     const a = current();
@@ -1282,17 +1343,14 @@ document.addEventListener("click", ev => {
     if (reg) toast("Lançamento removido", () => { a.registros.push(reg); save(); renderAll(); });
     return;
   }
-
   if (t.dataset.day) {
-    const base = mapDay ? fromYmd(mapDay) : new Date();
-    base.setDate(base.getDate() + Number(t.dataset.day));
-    mapDay = ymd(base);
+    const base = mapDay ? fromYmd(mapDay) : hoje0();
+    mapDay = ymd(addDias(base, Number(t.dataset.day)));
     renderPanel();
     return;
   }
 });
 
-/* Tema efetivo: preferência explícita do app, senão a do sistema. */
 function temaEscuroAtivo(){
   const attr = document.documentElement.getAttribute("data-theme");
   if (attr) return attr === "dark";
@@ -1311,7 +1369,6 @@ document.getElementById("btnTheme").onclick = () => {
   syncThemeColor();
   save();
 };
-/* Sem preferência explícita, seguir o sistema quando ele mudar (claro/escuro automático). */
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
   if (!store.theme) syncThemeColor();
 });
@@ -1335,9 +1392,7 @@ renderAll();
 
 /* Service worker: torna o app instalável e capaz de abrir sem rede.
    A condição é isSecureContext, e não "https:" — assim vale também para
-   http://localhost (que é contexto seguro, e onde este código é testado),
-   continuando a excluir file://.
-   Falha em silêncio se ./sw.js não existir no host: o app segue funcionando, só sem cache. */
+   http://localhost, continuando a excluir file://. */
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
