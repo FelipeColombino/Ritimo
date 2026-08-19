@@ -61,6 +61,30 @@ Outros comportamentos:
 - **Faixa passada sem lançamento não é falha** — o tempo dela já foi redistribuído nas seguintes,
   então ela aparece neutra, nunca em vermelho.
 
+## Modo posição (páginas)
+
+Metas de quantidade podem ser **posicionais**: em vez de contar "quantas páginas li", o app
+trabalha com "em que página estou". Liga-se no formulário (*Contar por posição*), junto com a
+primeira página do documento. O preset de processos já vem ligado.
+
+Com isso, o mapa de horas mostra o trecho de cada faixa (`31 → 37`) em vez do delta, o card
+"Agora" mostra até que página chegar hoje e onde você está, e o lançamento vira **Marcar**:
+você digita a página em que parou e o app calcula a diferença.
+
+Registrar por posição é **autocorretivo** — um lançamento errado é consertado pelo seguinte,
+porque a posição é absoluta. Com deltas, o erro ficaria para sempre e contaminaria em silêncio
+todo o cálculo dali para frente.
+
+A posição é **derivada, nunca armazenada**: `posição = primeira página + total feito`. Os
+registros continuam sendo deltas e o motor de cálculo não sabe que esse modo existe.
+
+**Cuidado ao mexer no mapa de horas.** A página inicial de uma faixa futura não pode vir do
+histórico — nada foi feito lá ainda, então todas as faixas restantes do dia comecariam na mesma
+página. O mapa carrega um cursor: as faixas passadas e a atual ancoram no realizado, as futuras
+seguem do fim planejado da anterior. Pela mesma razão, **dias futuros mostram quantidade, não
+página**: a posição de partida dependeria do que ainda vai acontecer até lá, e seria falsa
+precisão. É a mesma armadilha descrita no fim deste arquivo, reaparecendo nesta camada.
+
 ## Dados
 
 Ficam no `localStorage` do navegador, no próprio aparelho — nada é enviado para servidor nenhum.

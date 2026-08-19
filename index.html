@@ -45,6 +45,7 @@
 
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+body.posmode{padding-bottom:calc(152px + env(safe-area-inset-bottom))}
 body{
   background:var(--bg); color:var(--tx);
   font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -150,6 +151,15 @@ button{font:inherit;color:inherit;cursor:pointer}
 }
 .chip:active{background:var(--accSoft);border-color:var(--acc)}
 .chip.edit{flex:0 0 52px;font-weight:400;color:var(--tx2)}
+.chip.sm{min-height:38px;font-size:14px;font-weight:500}
+.chip.go{flex:0 0 96px;background:var(--acc);border-color:var(--acc);color:var(--accTx)}
+.posin{
+  flex:1 1 0;min-width:0;min-height:46px;padding:10px 12px;text-align:center;
+  background:var(--bg);border:1px solid var(--line);border-radius:var(--r);
+  color:var(--tx);font:inherit;font-weight:600;font-variant-numeric:tabular-nums;
+}
+label.inline{display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:14px;color:var(--tx)}
+label.inline input{width:20px;height:20px;min-height:0;flex:0 0 auto;padding:0}
 
 .btn{
   min-height:46px;padding:0 16px;border-radius:var(--r);
@@ -614,8 +624,14 @@ function cardHoje(a, m){
     case "encerrado":  big = "Horário encerrado"; classe = "sm";
       nota = "Faltaram " + fmtQ(a, m.faltaHoje) + ", que vão para os próximos dias."; break;
     default:
-      big = fmtQs(a, m.faltaHoje);
-      nota = "de " + fmtQ(a, m.md) + " previstos para hoje";
+      if (ehPos(a)) {
+        const at = feitoTotal(a);
+        big = "pág. " + pagAte(a, at + m.faltaHoje);
+        nota = "faltam " + fmtQ(a, m.faltaHoje) + (at > 0 ? " · você está na " + pagAte(a, at) : "");
+      } else {
+        big = fmtQs(a, m.faltaHoje);
+        nota = "de " + fmtQ(a, m.md) + " previstos para hoje";
+      }
   }
 
   const pct = m.md > 0 ? Math.min(100, m.feitoHoje/m.md*100) : (m.feitoHoje > 0 ? 100 : 0);
@@ -625,11 +641,10 @@ function cardHoje(a, m){
   if (m.estado === "andamento" || m.estado === "transborda") {
     const h1 = String(m.now.getHours()).padStart(2,"0");
     const h2 = String((m.now.getHours()+1) % 24).padStart(2,"0");
-    linhas += "<div><span>Nesta hora · " + h1 + "h–" + h2 + "h</span><b>" +
-      (m.capHora > 0
-        ? fmtQs(a, m.faltaHora)
-        : (m.proxima ? "livre até " + String(m.proxima.ini.getHours()).padStart(2,"0") + "h" : "fora do horário")) +
-      "</b></div>";
+    const alvoHora = m.capHora > 0
+      ? (ehPos(a) ? "até a " + pagAte(a, feitoTotal(a) + m.faltaHora) : fmtQs(a, m.faltaHora))
+      : (m.proxima ? "livre até " + String(m.proxima.ini.getHours()).padStart(2,"0") + "h" : "fora do horário");
+    linhas += "<div><span>Nesta hora · " + h1 + "h–" + h2 + "h</span><b>" + alvoHora + "</b></div>";
     linhas += "<div><span>Ritmo necessário</span><b>" + fmtRate(a, m.ritmoHora) + "</b></div>";
   }
   linhas += "<div><span>Tempo livre restante hoje</span><b>" + fmtHoras(m.capResto) + "</b></div>";
@@ -641,7 +656,8 @@ function cardHoje(a, m){
     : "";
 
   return '<section class="card hero">' +
-    '<div class="heroLabel">' + (m.estado === "andamento" || m.estado === "transborda" ? "Falta hoje" : "Hoje") + "</div>" +
+    '<div class="heroLabel">' + ((m.estado === "andamento" || m.estado === "transborda")
+        ? (ehPos(a) ? "Hoje, chegar até" : "Falta hoje") : "Hoje") + "</div>" +
     '<div class="heroNum ' + classe + '">' + big + "</div>" +
     '<div class="heroNote">' + nota + "</div>" +
     '<div class="bar" style="margin-bottom:12px"><i class="' + (cheio ? "done" : "") + '" style="width:' + pct.toFixed(1) + '%"></i></div>' +
@@ -656,6 +672,12 @@ function cardMapa(a, m){
   const faixas = faixasDoDia(a, d);
   const mdDia = metaDoDia(a, d);
   const label = ehHoje ? "Hoje · " + ddmm(d) : DIAS_LBL[d.getDay()] + " · " + ddmm(d);
+
+  /* Pagina absoluta so vale ate hoje. Para um dia futuro seria falsa precisao:
+     a pagina de partida depende do que ainda vai acontecer ate la, entao esses
+     dias continuam mostrando quantidade. */
+  const posAqui = ehPos(a) && d.getTime() <= hoje0().getTime();
+  let cursorPos = null;
 
   let linhas;
   if (!faixas.length) {
@@ -676,6 +698,17 @@ function cardMapa(a, m){
         ? alvoDaFaixa(a, d, f.ini, f.fim)
         : (capRef > 0 ? faltaRef * capMin(a, f.ini > ref ? f.ini : ref, f.fim) / capRef : 0);
       const feito = feitoEntre(a, f.ini, f.fim);
+      /* Partida da faixa: passadas e a atual ancoram no que de fato foi feito;
+         as futuras seguem do fim planejado da anterior. Lendo o historico, toda
+         faixa restante do dia comecaria na mesma pagina. */
+      let vTxt;
+      if (posAqui) {
+        const base = (passou || agora || cursorPos === null) ? feitoTotalAte(a, f.ini) : cursorPos;
+        vTxt = trecho(a, base, alvo);
+        cursorPos = base + alvo;
+      } else {
+        vTxt = fmtQs(a, feito) + " / " + fmtQs(a, alvo);
+      }
       const pct = alvo > 0 ? Math.min(100, feito/alvo*100) : (feito > 0 ? 100 : 0);
       const cls = agora ? "now" : (alvo > 0 && feito >= alvo ? "ok" : (passou ? "pass" : "fut"));
       const hi = String(f.ini.getHours()).padStart(2,"0");
@@ -685,14 +718,16 @@ function cardMapa(a, m){
       return '<div class="slot ' + cls + '">' +
         '<span class="t">' + rot + "</span>" +
         '<span class="mini"><i style="width:' + pct.toFixed(0) + '%"></i></span>' +
-        '<span class="v">' + fmtQs(a, feito) + " / " + fmtQs(a, alvo) + "</span>" +
+        '<span class="v">' + vTxt + "</span>" +
       "</div>";
     }).join("");
   }
 
   return '<section class="card">' +
     '<div class="row between" style="margin-bottom:8px">' +
-      '<h2 style="margin:0">' + label + " · meta " + fmtQs(a, mdDia) + "</h2>" +
+      '<h2 style="margin:0">' + label + " · " +
+        (posAqui ? "até a " + pagAte(a, feitoTotalAte(a, atMin(d,0)) + mdDia)
+                 : "meta " + fmtQs(a, mdDia)) + "</h2>" +
       '<span class="row" style="gap:6px">' +
         '<button class="icon" style="width:34px;height:34px" data-day="-1" aria-label="Dia anterior">‹</button>' +
         '<button class="icon" style="width:34px;height:34px" data-day="1" aria-label="Próximo dia">›</button>' +
@@ -805,11 +840,52 @@ function cardRegistros(a, m){
   "</section>";
 }
 
+/* ------------------------------------------------------------
+   POSICAO (paginas). Nada disso entra no motor de calculo: a
+   posicao e sempre derivada de quanto ja foi feito, entao os
+   registros continuam sendo deltas e as quatro funcoes do
+   calculo seguem intocadas.
+   ------------------------------------------------------------ */
+function ehPos(a){ return a.modo === "quantidade" && !!a.posicional; }
+function pagBase(a){ const n = Number(a.pagIni); return isFinite(n) && n > 0 ? n : 1; }
+/* total feito na atividade inteira (nao no ciclo) - posicao e acumulada */
+function feitoTotal(a){ return (a.feitoInicial||0) + a.registros.reduce((x,r) => x + r.qtd, 0); }
+function feitoTotalAte(a, t){
+  return (a.feitoInicial||0) + a.registros.reduce((x,r) => new Date(r.ts) < t ? x + r.qtd : x, 0);
+}
+/* ultima pagina lida depois de f unidades */
+function pagAte(a, f){ return Math.round(pagBase(a) + f - 1); }
+/* proxima pagina a ler depois de f unidades */
+function pagDe(a, f){ return Math.round(pagBase(a) + f); }
+/* trecho "de -> ate" de um alvo, partindo de f ja feitas */
+function trecho(a, f, alvo){
+  if (alvo <= 0) return "\u2014";
+  const de = pagDe(a, f), ate = pagAte(a, f + alvo);
+  return ate > de ? de + " \u2192 " + ate : "p\u00e1g. " + de;
+}
+
 function renderQuick(){
   const q = document.getElementById("quick");
   const a = current();
+  document.body.classList.toggle("posmode", !!(a && ehPos(a)));
   if (!a) { q.hidden = true; return; }
   q.hidden = false;
+  if (ehPos(a)) {
+    const f = feitoTotal(a);
+    q.innerHTML =
+      '<div class="lbl">' + (f > 0 ? "Você está na página " + pagAte(a, f)
+                                   : "Começa na página " + pagBase(a)) + "</div>" +
+      '<div class="inner">' +
+        '<input class="posin" type="number" inputmode="numeric" id="posInput" ' +
+          'placeholder="página atual" aria-label="Página em que você parou">' +
+        '<button class="chip go" data-marcar="1">Marcar</button>' +
+      "</div>" +
+      '<div class="inner" style="margin-top:6px">' +
+        [5,10,25].map(p => '<button class="chip sm" data-add="' + p + '">+' + p + "</button>").join("") +
+        '<button class="chip sm edit" data-custom="1" aria-label="Outro valor">✎</button>' +
+      "</div>";
+    return;
+  }
   const passos = isTempo(a) ? [15,30,60] : [1,5,10,25];
   q.innerHTML = '<div class="lbl">Registrar' + (isTempo(a) ? " minutos" : " " + esc(a.unidade)) + "</div>" +
     '<div class="inner">' +
@@ -874,7 +950,7 @@ function encerrarDia(){
    FORMULÁRIO
    ============================================================ */
 const PRESETS = {
-  processo: { modo:"quantidade", unidade:"páginas", tipoCiclo:"periodo",
+  processo: { modo:"quantidade", unidade:"páginas", tipoCiclo:"periodo", posicional:true,
     janelas: { 1:[{de:"08:00",ate:"12:00"},{de:"13:00",ate:"17:00"}], 2:"=1", 3:"=1", 4:"=1", 5:"=1" } },
   estudo: { modo:"tempo", unidade:"minutos", tipoCiclo:"recorrente",
     janelas: { 1:[{de:"19:00",ate:"22:00"}], 2:"=1", 3:"=1", 4:"=1", 5:"=1",
@@ -907,6 +983,7 @@ function novaAtividade(){
     duracaoDias: 7, ancora: ymd(segundaMaisRecente()),
     inicio: ymd(h), fim: ymd(addDias(h, 6)),
     transportar: false, limitePct: 30,
+    posicional: false, pagIni: 1,
     janelas: expandirPreset(PRESETS.estudo),
     feitoInicial: 0, registros: []
   };
@@ -978,7 +1055,15 @@ function metaBoxHTML(){
     '<div class="f2">' +
       '<input type="number" id="f_meta" min="0" step="1" inputmode="numeric" value="' + (d.metaCiclo || "") + '" placeholder="400">' +
       '<input type="text" id="f_unidade" value="' + esc(d.unidade) + '" placeholder="páginas">' +
-    "</div>";
+    "</div>" +
+    '<div class="f2" style="margin-top:10px;align-items:center">' +
+      '<label class="inline"><input type="checkbox" id="f_pos"' + (d.posicional ? " checked" : "") +
+        "> Contar por posição</label>" +
+      '<input type="number" id="f_pagini" min="1" step="1" inputmode="numeric" value="' +
+        (d.pagIni || 1) + '" placeholder="primeira página" aria-label="Primeira página">' +
+    "</div>" +
+    '<p class="hint">Ligado, o app mostra até que página chegar e você registra dizendo onde parou, ' +
+    "em vez de somar quanto leu. Use para documento numerado; deixe desligado para contagens soltas.</p>";
 }
 
 function cicloBoxHTML(){
@@ -1050,6 +1135,8 @@ function lerForm(){
     d.metaCiclo = d.modo === "tempo" ? Math.round(v*60) : v;
   }
   if (g("f_unidade")) d.unidade = (g("f_unidade").value || "").trim() || "unidades";
+  if (g("f_pos")) d.posicional = g("f_pos").checked;
+  if (g("f_pagini")) d.pagIni = Math.max(1, parseInt(g("f_pagini").value,10) || 1);
   if (d.modo === "tempo") d.unidade = "minutos";
   if (g("f_ini")) d.inicio = g("f_ini").value || d.inicio;
   if (g("f_fim")) d.fim = g("f_fim").value || d.fim;
@@ -1103,6 +1190,7 @@ function wireForm(){
       lerForm();
       const p = PRESETS[t.dataset.preset];
       draft.modo = p.modo; draft.unidade = p.unidade; draft.tipoCiclo = p.tipoCiclo;
+      draft.posicional = !!p.posicional;
       draft.metaCiclo = 0;
       draft.janelas = expandirPreset(p);
       diaEdit = DIAS_ORD.filter(n => draft.janelas[n].length)[0];
@@ -1333,6 +1421,19 @@ document.addEventListener("click", ev => {
   if (t.dataset.encerrar) { encerrarDia(); return; }
   if (t.dataset.custom)   { pedirValor(); return; }
   if (t.dataset.add)      { const a = current(); if (a) logQtd(a, parseFloat(t.dataset.add)); return; }
+  if (t.dataset.marcar) {
+    const a = current(); if (!a) return;
+    const inp = document.getElementById("posInput");
+    const alvo = parseInt(inp && inp.value, 10);
+    if (!isFinite(alvo)) { toast("Informe a página em que você parou"); return; }
+    const atual = pagAte(a, feitoTotal(a));
+    const delta = alvo - atual;
+    if (delta === 0) { toast("Você já está na página " + alvo); return; }
+    if (delta < 0 && !confirm("Voltar da página " + atual + " para a " + alvo + "?\n" +
+        "Isso desconta " + (-delta) + " " + a.unidade + ".")) return;
+    logQtd(a, delta);
+    return;
+  }
 
   if (t.dataset.del) {
     const a = current();
