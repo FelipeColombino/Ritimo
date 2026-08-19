@@ -45,7 +45,6 @@
 
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body.posmode{padding-bottom:calc(152px + env(safe-area-inset-bottom))}
 body{
   background:var(--bg); color:var(--tx);
   font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -150,9 +149,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   font-weight:600;font-variant-numeric:tabular-nums;
 }
 .chip:active{background:var(--accSoft);border-color:var(--acc)}
-.chip.edit{flex:0 0 52px;font-weight:400;color:var(--tx2)}
-.chip.sm{min-height:38px;font-size:14px;font-weight:500}
-.chip.go{flex:0 0 96px;background:var(--acc);border-color:var(--acc);color:var(--accTx)}
+.chip.go{flex:0 0 104px;background:var(--acc);border-color:var(--acc);color:var(--accTx)}
 .posin{
   flex:1 1 0;min-width:0;min-height:46px;padding:10px 12px;text-align:center;
   background:var(--bg);border:1px solid var(--line);border-radius:var(--r);
@@ -840,7 +837,8 @@ function cardRegistros(a, m){
   return '<section class="card"><h2>Últimos lançamentos</h2>' + linhas +
     '<div class="btns" style="margin-top:14px">' +
       (podeEncerrar ? '<button class="btn" data-encerrar="1">Encerrar o dia</button>' : "") +
-      '<button class="btn" data-done="' + a.id + '">Concluir atividade</button>' +
+      '<button class="btn" data-custom="1">' +
+        (ehPos(a) ? "Marcar em outro horário" : "Lançar em outro horário") + "</button>" +
     "</div>" +
     (podeEncerrar ? '<p class="note">Encerrar o dia empurra o que faltou para os próximos, sem ficar cobrando de você o resto de hoje.</p>' : "") +
   "</section>";
@@ -873,31 +871,34 @@ function trecho(a, f, alvo){
 function renderQuick(){
   const q = document.getElementById("quick");
   const a = current();
-  document.body.classList.toggle("posmode", !!(a && ehPos(a)));
   if (!a) { q.hidden = true; return; }
   q.hidden = false;
-  if (ehPos(a)) {
-    const f = feitoTotal(a);
-    q.innerHTML =
-      '<div class="lbl">' + (f > 0 ? "Você está na página " + pagAte(a, f)
-                                   : "Começa na página " + pagBase(a)) + "</div>" +
-      '<div class="inner">' +
-        '<input class="posin" type="number" inputmode="numeric" id="posInput" ' +
-          'placeholder="página atual" aria-label="Página em que você parou">' +
-        '<button class="chip go" data-marcar="1">Marcar</button>' +
-      "</div>" +
-      '<div class="inner" style="margin-top:6px">' +
-        [5,10,25].map(p => '<button class="chip sm" data-add="' + p + '">+' + p + "</button>").join("") +
-        '<button class="chip sm edit" data-custom="1" aria-label="Outro valor">✎</button>' +
-      "</div>";
-    return;
-  }
-  const passos = isTempo(a) ? [15,30,60] : [1,5,10,25];
-  q.innerHTML = '<div class="lbl">Registrar' + (isTempo(a) ? " minutos" : " " + esc(a.unidade)) + "</div>" +
+
+  /* Um campo e um botão, igual nos tres modos. Valores fixos (+5, +10, +15…)
+     quase nunca acertavam o que se leu ou estudou de fato, e a canetinha exigia
+     abrir uma segunda tela para digitar. Digitar aqui e mais rapido que os dois. */
+  const pos = ehPos(a);
+  const f = pos ? feitoTotal(a) : 0;
+  const rotulo = pos
+    ? (f > 0 ? "Você está na página " + pagAte(a, f) : "Começa na página " + pagBase(a))
+    : (isTempo(a) ? "Registrar minutos" : "Registrar " + esc(a.unidade));
+  const dica = pos ? "página atual" : (isTempo(a) ? "minutos" : esc(a.unidade));
+
+  q.innerHTML =
+    '<div class="lbl">' + rotulo + "</div>" +
     '<div class="inner">' +
-      passos.map(p => '<button class="chip" data-add="' + p + '">+' + p + "</button>").join("") +
-      '<button class="chip edit" data-custom="1" aria-label="Outro valor">✎</button>' +
+      '<input class="posin" type="number" step="any" id="qtdInput" ' +
+        'inputmode="' + (pos ? "numeric" : "decimal") + '" placeholder="' + dica + '" ' +
+        'aria-label="' + (pos ? "Página em que você parou" : "Valor a lançar") + '">' +
+      '<button class="chip go" data-lancar="1">' + (pos ? "Marcar" : "Lançar") + "</button>" +
     "</div>";
+
+  // Enter do teclado do celular lança direto. O input e recriado a cada render,
+  // entao o listener morre com ele e nao se acumula.
+  const inp = document.getElementById("qtdInput");
+  if (inp) inp.addEventListener("keydown", ev => {
+    if (ev.key === "Enter") { ev.preventDefault(); document.querySelector("[data-lancar]").click(); }
+  });
 }
 
 function renderWarn(){
@@ -1046,7 +1047,11 @@ function formHTML(isNovo){
       '<button type="button" class="btn" id="f_cancel">Cancelar</button>' +
       '<button type="button" class="btn primary" id="f_save">Salvar</button>' +
     "</div>" +
-    (isNovo ? "" : '<button type="button" class="btn danger full" id="f_del" style="margin-top:8px">Excluir atividade</button>');
+    (isNovo ? "" :
+      '<button type="button" class="btn full" id="f_concluir" style="margin-top:8px">Concluir atividade</button>' +
+      '<p class="hint">Encerra a meta inteira e manda para o histórico. Para só fechar o dia de hoje, ' +
+      'use <b>Encerrar o dia</b> na tela principal.</p>' +
+      '<button type="button" class="btn danger full" id="f_del" style="margin-top:8px">Excluir atividade</button>');
 }
 
 function metaBoxHTML(){
@@ -1246,6 +1251,11 @@ function wireForm(){
     }
 
     if (t.id === "f_cancel") { document.getElementById("dlg").close(); return; }
+    if (t.id === "f_concluir") {
+      const id = draft.id;
+      document.getElementById("dlg").close();
+      concluirAtividade(id); return;
+    }
     if (t.id === "f_del") {
       if (!confirm("Excluir “" + draft.nome + "” e todos os seus lançamentos?")) return;
       store.acts = store.acts.filter(a => a.id !== draft.id);
@@ -1390,25 +1400,39 @@ function pedirValor(){
   const s = freshSheet();
   const n = new Date();
   const local = ymd(n) + "T" + String(n.getHours()).padStart(2,"0") + ":" + String(n.getMinutes()).padStart(2,"0");
-  s.innerHTML = "<h2>Lançar " + (isTempo(a) ? "tempo" : esc(a.unidade)) + "</h2>" +
-    '<label for="v_q">' + (isTempo(a) ? "Minutos" : "Quantidade") + "</label>" +
-    '<input type="number" id="v_q" inputmode="decimal" step="any" placeholder="' + (isTempo(a) ? "45" : "12") + '">' +
+  const pos = ehPos(a);
+  s.innerHTML = "<h2>" + (pos ? "Marcar página" : "Lançar " + (isTempo(a) ? "tempo" : esc(a.unidade))) + "</h2>" +
+    '<label for="v_q">' + (pos ? "Página em que você parou" : (isTempo(a) ? "Minutos" : "Quantidade")) + "</label>" +
+    '<input type="number" id="v_q" inputmode="decimal" step="any" placeholder="' +
+      (pos ? "247" : (isTempo(a) ? "45" : "12")) + '">' +
     '<label for="v_t">Quando</label>' +
     '<input type="datetime-local" id="v_t" value="' + local + '">' +
     '<div class="btns" style="margin-top:18px">' +
       '<button class="btn" id="v_cancel">Cancelar</button>' +
       '<button class="btn primary" id="v_ok">Lançar</button>' +
     "</div>" +
-    '<p class="hint">Use um valor negativo para corrigir um lançamento a mais.</p>';
+    '<p class="hint">' + (pos
+      ? "A página é absoluta — o app calcula a diferença sozinho, contando a partir de onde " +
+        "você estava naquele horário. Serve para creditar a leitura à faixa de hora certa quando " +
+        "você só lembrou de marcar depois."
+      : "Use um valor negativo para corrigir um lançamento a mais.") + "</p>";
   document.getElementById("dlg").showModal();
   setTimeout(() => document.getElementById("v_q").focus(), 50);
   document.getElementById("v_cancel").onclick = () => document.getElementById("dlg").close();
   document.getElementById("v_ok").onclick = () => {
     const q = parseFloat(document.getElementById("v_q").value);
-    if (!q || !isFinite(q)) { toast("Informe um valor"); return; }
+    if (!isFinite(q)) { toast("Informe um valor"); return; }
     const tv = document.getElementById("v_t").value;
+    const quando = tv ? new Date(tv) : new Date();
+    let delta = q;
+    if (pos) {
+      /* A posicao e medida no instante escolhido, nao agora: dizer "as 9h30 eu
+         estava na 240" tem que contar a partir do que havia sido feito ate ali. */
+      delta = Math.round(q) - pagAte(a, feitoTotalAte(a, quando));
+      if (delta === 0) { toast("Você já estava nessa página nesse horário"); return; }
+    } else if (q === 0) { toast("Informe um valor"); return; }
     document.getElementById("dlg").close();
-    logQtd(a, q, tv ? new Date(tv) : new Date());
+    logQtd(a, delta, quando);
   };
 }
 
@@ -1426,18 +1450,22 @@ document.addEventListener("click", ev => {
   if (t.dataset.done)     { concluirAtividade(t.dataset.done); return; }
   if (t.dataset.encerrar) { encerrarDia(); return; }
   if (t.dataset.custom)   { pedirValor(); return; }
-  if (t.dataset.add)      { const a = current(); if (a) logQtd(a, parseFloat(t.dataset.add)); return; }
-  if (t.dataset.marcar) {
+  if (t.dataset.lancar) {
     const a = current(); if (!a) return;
-    const inp = document.getElementById("posInput");
-    const alvo = parseInt(inp && inp.value, 10);
-    if (!isFinite(alvo)) { toast("Informe a página em que você parou"); return; }
-    const atual = pagAte(a, feitoTotal(a));
-    const delta = alvo - atual;
-    if (delta === 0) { toast("Você já está na página " + alvo); return; }
-    if (delta < 0 && !confirm("Voltar da página " + atual + " para a " + alvo + "?\n" +
-        "Isso desconta " + (-delta) + " " + a.unidade + ".")) return;
-    logQtd(a, delta);
+    const inp = document.getElementById("qtdInput");
+    const v = parseFloat(inp && inp.value);
+    if (!isFinite(v)) { toast(ehPos(a) ? "Informe a página em que você parou" : "Informe um valor"); return; }
+    if (ehPos(a)) {
+      const alvo = Math.round(v), atual = pagAte(a, feitoTotal(a));
+      const delta = alvo - atual;
+      if (delta === 0) { toast("Você já está na página " + alvo); return; }
+      if (delta < 0 && !confirm("Voltar da página " + atual + " para a " + alvo + "?\n" +
+          "Isso desconta " + (-delta) + " " + a.unidade + ".")) return;
+      logQtd(a, delta);
+    } else {
+      if (v === 0) { toast("Informe um valor"); return; }
+      logQtd(a, v);
+    }
     return;
   }
 

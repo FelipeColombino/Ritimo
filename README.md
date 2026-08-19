@@ -64,6 +64,14 @@ Outros comportamentos:
   faltou explicitamente.
 - **Saldo entre ciclos** (opcional) — sobrou tempo, o ciclo seguinte afrouxa; faltou, ele aperta.
   Limitado a ±30% da meta base por padrão, para uma semana ruim não gerar outra impossível.
+- **Lançamento é um campo livre e um botão**, igual nos três modos — página, minutos ou quantidade.
+  Os valores prefixados (+5, +15…) saíram: quase nunca acertavam o que foi lido ou estudado de fato,
+  e a alternativa (a "canetinha") exigia abrir uma segunda tela para digitar. Enter lança direto.
+  Para creditar a leitura a uma faixa de hora anterior, *Marcar/Lançar em outro horário*, no cartão
+  de lançamentos. No modo posição esse diálogo mede a posição **no instante escolhido**, não agora.
+- **Concluir atividade mora no ✎ de editar**, não na tela do dia: encerra a meta inteira, é ação rara
+  e definitiva. Na tela do dia ficaria ao lado de botões de uso diário — e sobrava sozinha justamente
+  quando a meta do dia era cumprida, convidando ao clique errado. Fechar só o dia é *Encerrar o dia*.
 - **Faixa passada sem lançamento não é falha** — o tempo dela já foi redistribuído nas seguintes,
   então ela aparece neutra, nunca em vermelho.
 
