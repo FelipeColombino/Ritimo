@@ -54,8 +54,14 @@ todo: pulou uma faixa, as seguintes apertam; adiantou, elas afrouxam.
 
 Outros comportamentos:
 
-- **Transbordo** — se o que falta não cabe mais no tempo livre de hoje, o app avisa em vez de pedir o
-  impossível, e o excedente entra na conta dos próximos dias. *Encerrar o dia* faz isso explicitamente.
+- **Transbordo — só em metas de tempo.** Se o que falta não cabe no tempo livre que resta hoje, o app
+  avisa em vez de pedir o impossível. Em metas de **quantidade não existe teto**: o ritmo do plano é
+  uma média de planejamento, não a sua velocidade máxima — dá para ler 30 páginas numa hora em que
+  ele previa 10. Converter quantidade em minutos por esse ritmo fazia o aviso disparar sempre que se
+  ficava atrasado, que é justamente quando ele mente: no ritmo médio do plano nunca se recupera
+  atraso nenhum. Ali quem comunica a pressão é o *ritmo necessário*, que sobe sozinho. O limite
+  físico de verdade — acabou a janela de hoje — vale nos dois modos. *Encerrar o dia* empurra o que
+  faltou explicitamente.
 - **Saldo entre ciclos** (opcional) — sobrou tempo, o ciclo seguinte afrouxa; faltou, ele aperta.
   Limitado a ±30% da meta base por padrão, para uma semana ruim não gerar outra impossível.
 - **Faixa passada sem lançamento não é falha** — o tempo dela já foi redistribuído nas seguintes,

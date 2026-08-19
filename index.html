@@ -527,15 +527,21 @@ function metrics(a, now){
   let proxima = null;
   for (const f of faixasDoDia(a, d)) { if (f.ini > now) { proxima = f; break; } }
 
-  /* Transbordo: o que ainda falta hoje cabe no que sobrou de janela?
-     Em modo tempo a comparação é direta (ambos em minutos); em quantidade,
-     converte pelo ritmo que o próprio plano do ciclo pressupõe. */
+  /* Transbordo só existe onde a capacidade é um limite físico, e isso só vale
+     para tempo: não dá para fazer 3 h de estudo em 2 h de janela.
+
+     Em quantidade não há teto. O ritmo do plano é uma média de planejamento, não
+     a velocidade máxima de leitura — dá para ler 30 páginas numa hora em que o
+     plano previa 10. Convertendo páginas em minutos por esse ritmo, o aviso
+     disparava sempre que se ficava atrasado, que é exatamente quando ele mente:
+     por construção, no ritmo médio do plano nunca se recupera atraso nenhum.
+     Quem comunica a pressão nesse caso é o "ritmo necessário", que sobe sozinho
+     e diz a verdade. O limite físico real — acabou a janela de hoje — continua
+     coberto pelo estado "encerrado". */
   const capCicloTotal = capMin(a, c.ini, c.fim);
   const ritmoPlano = capCicloTotal > 0 ? metaC / (capCicloTotal/60) : 0;
-  const minNecessarios = isTempo(a) ? faltaHoje : (ritmoPlano > 0 ? faltaHoje/ritmoPlano*60 : Infinity);
-  const transborda = faltaHoje > 0 && minNecessarios > capResto + 1;
-  const cabeAinda = isTempo(a) ? capResto : ritmoPlano * capResto/60;
-  const sobra = Math.max(0, faltaHoje - cabeAinda);
+  const transborda = isTempo(a) && faltaHoje > 0 && faltaHoje > capResto + 1;
+  const sobra = transborda ? Math.max(0, faltaHoje - capResto) : 0;
 
   let estado;
   if (!c.dentro)               estado = "fora";
@@ -651,7 +657,7 @@ function cardHoje(a, m){
 
   const aviso = m.estado === "transborda"
     ? '<div class="warnbar" style="margin:12px 0 0;text-align:left"><b>Não cabe mais hoje.</b> ' +
-      "No ritmo do plano, o que falta pede mais tempo do que sobrou de janela. " +
+      "Faltam " + fmtQ(a, m.faltaHoje) + " e só restam " + fmtHoras(m.capResto) + " de janela. " +
       "Cerca de <b>" + fmtQ(a, m.sobra) + "</b> vai transbordar para os próximos dias.</div>"
     : "";
 
